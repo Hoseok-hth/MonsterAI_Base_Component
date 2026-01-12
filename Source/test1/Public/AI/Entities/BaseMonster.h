@@ -11,6 +11,10 @@ class TEST1_API ABaseMonster : public ACharacter
 
 public:
 	ABaseMonster(const FObjectInitializer& ObjectInitializer);
+	void ExecuteKill(AActor* Victim);
+	bool IsExecutionFinished() const{return !bIsExecutionActive;}
+	void FinishExecution(){bIsExecutionActive = false;}
+	
 
 protected:
 	virtual void BeginPlay() override;
@@ -27,4 +31,11 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Component")
 	class UMonsterCombatComponent* CombatComponent;
+	
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Animation")
+	class UAnimMontage* ExecutionMontage;
+	
+private:
+	bool bIsExecutionActive = false;
 };

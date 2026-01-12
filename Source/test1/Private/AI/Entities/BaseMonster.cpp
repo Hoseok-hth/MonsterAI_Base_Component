@@ -5,6 +5,7 @@
 #include "AI/Components/MonsterCombatComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Interfaces/ExecutionTargetInterface.h"
 
 ABaseMonster::ABaseMonster(const FObjectInitializer& ObjectInitializer)
 {
@@ -32,3 +33,25 @@ void ABaseMonster::BeginPlay()
 		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetCurrentSpeed();
 	}
 }
+
+void ABaseMonster::ExecuteKill(AActor* Victim)
+{
+	if (!Victim)
+	{
+		return;
+	}
+	IExecutionTargetInterface* Target = Cast<IExecutionTargetInterface>(Victim);
+	
+	if(Target)
+	{
+		bIsExecutionActive = true;
+		Target->OnCaughtByMonster(this);
+		
+		if (ExecutionMontage)
+		{
+			PlayAnimMontage(ExecutionMontage);
+		}
+	}
+	
+}
+

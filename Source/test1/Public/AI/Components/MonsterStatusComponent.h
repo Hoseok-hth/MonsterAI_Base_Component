@@ -22,19 +22,22 @@ public:
 	//도착 판정 범위 반환
 	float GetArrivalRadius() const { return ArrivalRadius; }
 	
-	// monster speed 반환, 속도 가감 곱연산 set
+	// monster speed 반환
 	float GetCurrentSpeed() const { return BaseSpeed * SpeedMultiplier; }
 	void SetSpeedMultiplier(float NewMultiplier) { SpeedMultiplier = NewMultiplier; }
-    
+    float GetBaseSpeed() const { return BaseSpeed; }
+	float GetChaseSpeed() const {return ChaseSpeed; }
 	// monster sensing
 	float GetBaseDetectionRange() const { return BaseDetectionRange; }
 	float GetViewAngle() const { return ViewAngle; }
 	float GetBaseHearingRange() const { return BaseHearingRange; }
 	
+	float GetMenaceDuration() const { return MenaceDuration; }
+	
 	//monster type
 	EMonsterType GetMonsterType() const { return MonsterType; }
 
-	//monster attck
+	//monster attack
 	float GetAttackRange() const { return AttackRange; }
 	
 	//monster chase
@@ -55,10 +58,13 @@ private:
 	TArray<AActor*> PatrolPoints;
 	
 	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float ArrivalRadius = 50.f;
+	float ArrivalRadius = 100.f;
 	
 	UPROPERTY(EditAnywhere, Category = "Monster Stat")
 	float BaseSpeed = 450.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Monster Stat")
+	float ChaseSpeed = 700.f;
 
 	UPROPERTY(VisibleAnywhere, Category = "Monster Stat")
 	float SpeedMultiplier = 1.0f;
@@ -77,4 +83,7 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = "Monster Stat")
 	float ChaseRange = 2000.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Monster Stat")
+	float MenaceDuration = 3.0f;
 };

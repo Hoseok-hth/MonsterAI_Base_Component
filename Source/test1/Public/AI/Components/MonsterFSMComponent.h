@@ -25,8 +25,9 @@ protected:
 	virtual void HandleIdle();
 	virtual void HandleChase();
 	virtual void HandleAttack();
+	virtual void HandleMenace();
 	virtual void Patrol();
-	
+	void UpdateMovementSpeed(EMonsterState NewState);
 	UPROPERTY(VisibleAnywhere, Category = "AI")
 	AActor* TargetActor;
 	
@@ -41,4 +42,5 @@ private:
 
 	float DetectionTimer = 0.0f;
 	float DetectionInterval = 0.2f;
+	float MenaceTimer = 0.0f;
 };

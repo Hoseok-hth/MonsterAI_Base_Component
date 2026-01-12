@@ -8,6 +8,10 @@
 #include "Engine/OverlapResult.h"
 #include "Kismet/GameplayStatics.h"
 #include "Global/Define.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Navigation/PathFollowingComponent.h"
+#include "DrawDebugHelpers.h"
+#include "NavigationSystem.h"
 
 class AAIController;
 
@@ -32,6 +36,15 @@ void UMonsterFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if (OwnerMonster && OwnerMonster->GetCharacterMovement())
+	{
+		// 이동 모드(Walking, Falling 등)를 문자열로 변환
+		FString Mode = UEnum::GetValueAsString(OwnerMonster->GetCharacterMovement()->MovementMode);
+        
+		// 속도의 크기(Size)를 가져와서 로그 출력
+		// 0.5초마다 찍히게 하거나 그냥 찍어서 흐름을 확인하세요.
+		//UE_LOG(LogTemp, Warning, TEXT("현재 이동 모드: %s | 실시간 속도: %f"), *Mode, OwnerMonster->GetVelocity().Size());
+	}
 	
 	switch (CurrentState)
 	{
@@ -44,6 +57,9 @@ void UMonsterFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	case EMonsterState::Attack:
 		HandleAttack();
 		break;
+	case EMonsterState::Menace:
+		HandleMenace();
+		break;
 	default:
 		break;
 	}
@@ -53,8 +69,12 @@ void UMonsterFSMComponent::SetState(EMonsterState NewState)
 {
 	if (CurrentState == NewState) return;
 
-	
-	if (NewState == EMonsterState::Idle)
+	if (NewState == EMonsterState::Menace)
+	{
+		MenaceTimer = 0.0f;
+	}
+	UpdateMovementSpeed(NewState);
+	if (NewState == EMonsterState::Idle && CurrentState != EMonsterState::Idle)
 	{
 		UpdateNearestPatrolIndex();
 	}
@@ -188,6 +208,7 @@ void UMonsterFSMComponent::HandleChase()
 		if (Distance <= Status->GetAttackRange())
 		{
 			SetState(EMonsterState::Attack);
+			OwnerMonster->ExecuteKill(TargetActor);
 		}
 		if (Distance > Status->GetChaseRange())
 		{
@@ -200,13 +221,51 @@ void UMonsterFSMComponent::HandleChase()
 
 void UMonsterFSMComponent::HandleAttack()
 {
-	
+	AAIController* AIC = Cast<AAIController>(OwnerMonster->GetController());
+	if (AIC)
+	{
+		AIC->StopMovement();
+	}
+	if (TargetActor)
+	{
+		FVector LookDir = TargetActor->GetActorLocation() - OwnerMonster->GetActorLocation();
+		LookDir.Z = 0.f;
+		if (!LookDir.IsNearlyZero())
+		{
+			OwnerMonster->SetActorRotation(LookDir.Rotation());
+		}
+	}
+	if (OwnerMonster)
+	{
+		if (OwnerMonster->IsExecutionFinished())
+		{
+			SetState(EMonsterState::Menace);
+		}
+	}
+}
+
+void UMonsterFSMComponent::HandleMenace()
+{
+	UMonsterStatusComponent* Status = OwnerMonster->FindComponentByClass<UMonsterStatusComponent>();
+	if (!Status)
+	{
+		return;
+	}
+	MenaceTimer += GetWorld()->GetDeltaSeconds();
+	if (MenaceTimer >= Status->GetMenaceDuration())
+	{
+		SetState(EMonsterState::Idle);
+		TargetActor = nullptr;
+	}
 }
 
 void UMonsterFSMComponent::Patrol()
 {
 	UMonsterStatusComponent* Status = OwnerMonster->FindComponentByClass<UMonsterStatusComponent>();
-
+	if (!Status)
+	{
+		return;
+	}
 	if (Status->GetIdleBehavior() == EIdleBehavior::Patrol)
 	{
 		const TArray<AActor*>& Targets = Status->GetPatrolTargets();
@@ -217,18 +276,77 @@ void UMonsterFSMComponent::Patrol()
 		AAIController* AIC = Cast<AAIController>(OwnerMonster->GetController());
 		if (AIC)
 		{
+			FVector MyLocation = OwnerMonster->GetActorLocation();
 			FVector TargetLocation = Targets[CurrentPatrolIndex]->GetActorLocation();
-			float DistToPoint = FVector::Dist(OwnerMonster->GetActorLocation(), TargetLocation);
+			float DistToPoint = FVector::Dist2D(MyLocation, TargetLocation);
+
+
 			
-			if (DistToPoint <= Status->GetArrivalRadius())
+			UE_LOG(LogTemp, Warning, TEXT("목적지까지 남은 거리: %f | 판정 거리: %f"), DistToPoint, Status->GetArrivalRadius());
+			if (DistToPoint <= Status->GetArrivalRadius() +50.f)
 			{
-				CurrentPatrolIndex = (CurrentPatrolIndex + 1) % Targets.Num();
 				
-			}else
+				CurrentPatrolIndex = (CurrentPatrolIndex + 1) % Targets.Num();
+				UE_LOG(LogTemp, Warning, TEXT("목적지 도달! 다음 인덱스로 변경: %d"), CurrentPatrolIndex);
+             
+				
+				TargetLocation = Targets[CurrentPatrolIndex]->GetActorLocation();
+			}
+			if (AIC->GetMoveStatus() == EPathFollowingStatus::Moving)
 			{
-				AIC->MoveToLocation(TargetLocation,Status->GetArrivalRadius());
+				return;
+			}
+
+			UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+			if (NavSys)
+			{
+				FNavLocation ProjectedLocation;
+				if (NavSys->ProjectPointToNavigation(TargetLocation, ProjectedLocation, FVector(500.f, 500.f, 500.f)))
+				{
+					DrawDebugSphere(GetWorld(), ProjectedLocation.Location, 30.f, 12, FColor::Green, false, 1.f);
+            
+					EPathFollowingRequestResult::Type MoveResult = AIC->MoveToLocation(ProjectedLocation.Location, Status->GetArrivalRadius());
+            
+					if (MoveResult == EPathFollowingRequestResult::RequestSuccessful)
+					{
+					}
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("==== 목적지가 내비 메시 위에 없습니다! (Project 실패) ===="));
+				}
 			}
 		}
+	}
+}
+
+void UMonsterFSMComponent::UpdateMovementSpeed(EMonsterState NewState)
+{
+	if (!OwnerMonster)
+	{
+		return;
+	}
+	UCharacterMovementComponent* MoveComp = OwnerMonster->GetCharacterMovement();
+	UMonsterStatusComponent* Status = OwnerMonster->FindComponentByClass<UMonsterStatusComponent>();
+	
+	if (!MoveComp || !Status)
+	{
+		return;
+	}
+	switch (NewState)
+	{
+	case EMonsterState::Idle:
+		MoveComp->MaxWalkSpeed = Status->GetBaseSpeed();
+		break;
+	case EMonsterState::Chase:
+		MoveComp->MaxWalkSpeed = Status->GetChaseSpeed();
+		break;
+	case EMonsterState::Attack:
+	case EMonsterState::Menace:
+		MoveComp->MaxWalkSpeed = 0.0f;
+		break;
+	default:
+		break;
 	}
 }
 

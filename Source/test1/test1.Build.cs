@@ -15,6 +15,9 @@ public class test1 : ModuleRules
 			
 			//AI
 			"AIModule",
+			
+			//Navigation
+			"NavigationSystem",
 		});
 
 		PublicIncludePaths.AddRange(new string[] 
