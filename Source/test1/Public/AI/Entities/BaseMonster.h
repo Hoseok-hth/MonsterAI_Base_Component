@@ -15,7 +15,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// components 스테이터스, state , sensing, combat, + movement 까지
+	// components 스테이터스, state , sensing, combat,
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Component")
 	class UMonsterStatusComponent* StatusComponent;
 

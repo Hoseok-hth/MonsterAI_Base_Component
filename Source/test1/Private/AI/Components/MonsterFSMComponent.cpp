@@ -53,6 +53,7 @@ void UMonsterFSMComponent::SetState(EMonsterState NewState)
 {
 	if (CurrentState == NewState) return;
 
+	
 	if (NewState == EMonsterState::Idle)
 	{
 		UpdateNearestPatrolIndex();
@@ -68,6 +69,12 @@ void UMonsterFSMComponent::SetState(EMonsterState NewState)
 // 기본 아이들일때
 void UMonsterFSMComponent::HandleIdle()
 {
+	if (!OwnerMonster)
+	{
+		return;
+	}
+	//if DetectionTime less then Interval -> don't find Player
+	//0.2초마다 플레이어 탐색, 최적화를 위해 있는 부분
 	DetectionTimer += GetWorld() ->GetDeltaSeconds();
 	if (DetectionTimer < DetectionInterval)
 	{
@@ -75,10 +82,7 @@ void UMonsterFSMComponent::HandleIdle()
 		return;
 	}
 	DetectionTimer = 0.0f;
-	if (!OwnerMonster)
-	{
-		return;
-	}
+	
 	UMonsterSensingComponent* Sensing = OwnerMonster->FindComponentByClass<UMonsterSensingComponent>();
 	UMonsterStatusComponent* Status = OwnerMonster->FindComponentByClass<UMonsterStatusComponent>();
 	
@@ -86,14 +90,18 @@ void UMonsterFSMComponent::HandleIdle()
 	{
 		return;
 	}
-	EMonsterType Type = Status->GetMonsterType();
 	
+	EMonsterType Type = Status->GetMonsterType();
+	//trigger check, specific behavior defined child component
+	//트리거 발생 우선 확인, 트리거시 행동은 자식컴포넌트에서 정의
 	if (Sensing->GetIsTriggerd())
 	{
 		SetState(EMonsterState::Chase);
 		return;
 	}
 	
+	//Using StatusComponent Data, Set Searching Player Range(for performance)
+	//StatusComponent 에 저장된 정보를 활용해서 플레이어 발견범위 제한(최적화)
 	FVector MyLocation = OwnerMonster->GetActorLocation();
 	float DetectionRadius =0.f;
 	if (Status->GetMonsterType() == EMonsterType::Visual)
@@ -112,6 +120,8 @@ void UMonsterFSMComponent::HandleIdle()
 			DetectionRadius = Status->GetBaseHearingRange();
 		}
 	}
+	//find player in range
+	//범위내 있는 대상이 플레이어인지 찾음
 	TArray<FOverlapResult> OverlapResults;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(OwnerMonster);
@@ -129,9 +139,12 @@ void UMonsterFSMComponent::HandleIdle()
 		for (const FOverlapResult& OverlapResult : OverlapResults)
 		{
 			AActor* OverlappedActor = OverlapResult.GetActor();
-		
+			//if exist player in range(by "Player" Tag)
+			//플레이어가 존재한 경우(player Tag 기반)
 			if (OverlappedActor && OverlappedActor->ActorHasTag(FProjectTags::Player))
 			{
+				//is monster find? Check by MonsyerType
+				//몬스터가 플레이어를 인식했는지를 몬스터타입별로 확인
 				if (Type == EMonsterType::Visual || Type == EMonsterType::Hybrid)
 				{
 					if (Sensing->CanSeeTarget(OverlappedActor))
