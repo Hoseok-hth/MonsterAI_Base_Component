@@ -1,0 +1,20 @@
+# Unreal Engine Folders
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+FileOpenOrder/
+
+# Visual Studio / IDE Folders
+.vs/
+.idea/
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Miscellaneous
+*.pdb
+*.obj
