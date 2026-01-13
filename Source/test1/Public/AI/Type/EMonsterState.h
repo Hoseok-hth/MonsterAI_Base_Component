@@ -8,7 +8,6 @@ enum class EMonsterState : uint8
 {
 	None		UMETA(DisplayName = "None"),
 	Idle        UMETA(DisplayName = "Idle"),
-	Patrol      UMETA(DisplayName = "Patrol"),
 	Chase       UMETA(DisplayName = "Chase"),
 	Attack      UMETA(DisplayName = "Attack"),
 	Menace     UMETA(DisplayName = "Menace"),

@@ -68,22 +68,16 @@ void UMonsterFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 void UMonsterFSMComponent::SetState(EMonsterState NewState)
 {
 	if (CurrentState == NewState) return;
-
-	if (NewState == EMonsterState::Menace)
-	{
-		MenaceTimer = 0.0f;
-	}
-	UpdateMovementSpeed(NewState);
-	if (NewState == EMonsterState::Idle && CurrentState != EMonsterState::Idle)
-	{
-		UpdateNearestPatrolIndex();
-	}
+	ExitCurrentState();
+	EMonsterState PreviousState = CurrentState;
 	CurrentState = NewState;
+	EnterNewState(PreviousState);
 
 	//log check
-	UE_LOG(LogTemp, Warning, TEXT("==== [%s] State Changed to: %s ===="), 
-		*GetOwner()->GetName(), 
-		*UEnum::GetValueAsString(NewState));
+	UE_LOG(LogTemp, Warning, TEXT("==== [%s] %s -> %s ===="), 
+	   *GetOwner()->GetName(), 
+	   *UEnum::GetValueAsString(PreviousState),
+	   *UEnum::GetValueAsString(NewState));
 }
 
 // 기본 아이들일때
@@ -266,9 +260,22 @@ void UMonsterFSMComponent::Patrol()
 	{
 		return;
 	}
+	if (bIsWaiting)
+	{
+		PatrolWaitTimer += GetWorld()->GetDeltaSeconds();
+		if (PatrolWaitTimer >= PatrolTargetWaitTime)
+		{
+			bIsWaiting = false;
+			PatrolWaitTimer = 0.0f;
+			const TArray<AMonsterPatrolPoint*>& Targets = Status->GetPatrolTargets();
+			CurrentPatrolIndex = (CurrentPatrolIndex + 1) % Targets.Num();
+			return;
+		}
+		return;
+	}
 	if (Status->GetIdleBehavior() == EIdleBehavior::Patrol)
 	{
-		const TArray<AActor*>& Targets = Status->GetPatrolTargets();
+		const TArray<AMonsterPatrolPoint*>& Targets = Status->GetPatrolTargets();
 		if (Targets.Num() == 0 || !Targets.IsValidIndex(CurrentPatrolIndex) || !Targets[CurrentPatrolIndex])
 		{
 			return;
@@ -285,10 +292,19 @@ void UMonsterFSMComponent::Patrol()
 			UE_LOG(LogTemp, Warning, TEXT("목적지까지 남은 거리: %f | 판정 거리: %f"), DistToPoint, Status->GetArrivalRadius());
 			if (DistToPoint <= Status->GetArrivalRadius() +50.f)
 			{
-				
-				CurrentPatrolIndex = (CurrentPatrolIndex + 1) % Targets.Num();
-				UE_LOG(LogTemp, Warning, TEXT("목적지 도달! 다음 인덱스로 변경: %d"), CurrentPatrolIndex);
+				if (Targets[CurrentPatrolIndex]->WaitTime > 0.0f)
+				{
+					bIsWaiting = true;
+					PatrolTargetWaitTime = Targets[CurrentPatrolIndex]->WaitTime;
+					AIC->StopMovement();
+					UE_LOG(LogTemp, Warning, TEXT("지점 도달: %f초간 대기 시작"), PatrolTargetWaitTime);
+				}else
+				{
+					CurrentPatrolIndex = (CurrentPatrolIndex + 1) % Targets.Num();
+					UE_LOG(LogTemp, Warning, TEXT("목적지 도달! 다음 인덱스로 변경: %d"), CurrentPatrolIndex);
              
+				}
+				
 				
 				TargetLocation = Targets[CurrentPatrolIndex]->GetActorLocation();
 			}
@@ -317,6 +333,44 @@ void UMonsterFSMComponent::Patrol()
 				}
 			}
 		}
+	}
+}
+
+void UMonsterFSMComponent::ExitCurrentState()
+{
+	bIsWaiting = false;
+	PatrolWaitTimer = 0.0f;
+	DetectionTimer = 0.0f;
+	AAIController* AIC = Cast<AAIController>(OwnerMonster->GetController());
+	if (AIC)
+	{
+		AIC->StopMovement();
+	}
+}
+
+void UMonsterFSMComponent::EnterNewState(EMonsterState PreviousState)
+{
+	UpdateMovementSpeed(PreviousState);
+	switch (PreviousState)
+	{
+	case EMonsterState::Idle:
+		if (PreviousState != EMonsterState::Idle)
+		{
+			UpdateNearestPatrolIndex();
+		}
+		break;
+	case EMonsterState::Menace:
+		MenaceTimer = 0.0f;
+		break;
+	case EMonsterState::Chase:
+		break;
+	case EMonsterState::Attack:
+		break;
+	case EMonsterState::Special:
+		break;
+	case EMonsterState::Stunned:
+		break;
+		
 	}
 }
 
@@ -358,7 +412,7 @@ void UMonsterFSMComponent::UpdateNearestPatrolIndex()
 		return;
 	}
 	
-	const TArray<AActor*>& Targets = Status->GetPatrolTargets();
+	const TArray<AMonsterPatrolPoint*>& Targets = Status->GetPatrolTargets();
 	if (Targets.Num() == 0)
 	{
 		return;
