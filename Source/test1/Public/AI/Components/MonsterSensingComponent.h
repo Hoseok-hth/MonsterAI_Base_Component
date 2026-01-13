@@ -4,11 +4,15 @@
 #include "Components/ActorComponent.h"
 #include "MonsterSensingComponent.generated.h"
 
+class BaseMonster;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class TEST1_API UMonsterSensingComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+protected:
+	virtual void BeginPlay() override;
 public:
 	UMonsterSensingComponent();
 	
@@ -28,6 +32,7 @@ public:
 	// 가장 가까운 플레이어 반환, 
 	AActor* FindNearestPlayer();
 	
+	
 	//기획에서 뭉쳐있으면 쫒아가는 부분 구현
 	bool IsPlayersGrouping(float Radius, int32 MinCount);
 	bool IsTargetInLight(AActor* Target);
@@ -39,6 +44,8 @@ public:
 	
 	//event
 	bool bTriggered = false;
+	
+	ABaseMonster* Owner;
 	
 	
 };

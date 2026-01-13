@@ -32,7 +32,9 @@ public:
 	float GetBaseDetectionRange() const { return BaseDetectionRange; }
 	float GetViewAngle() const { return ViewAngle; }
 	float GetBaseHearingRange() const { return BaseHearingRange; }
+	float GetEyeHeight() const { return EyeHeight; }
 	
+	float GetMaxLostTargetTime() const { return MaxLostTargetTime; }
 	float GetMenaceDuration() const { return MenaceDuration; }
 	
 	//monster type
@@ -87,4 +89,10 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = "Monster Status")
 	float MenaceDuration = 3.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Monster Status")
+	float EyeHeight = 70.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Monster Status")
+	float MaxLostTargetTime = 5.f;
 };
