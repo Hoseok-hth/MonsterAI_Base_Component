@@ -210,11 +210,7 @@ void UMonsterFSMComponent::HandleEarChase()
 		LostTargetTimer = 0.0f;
 		AIC->MoveToLocation(Sensing->GetLastSoundLocation());
 	}
-	if (Status->GetMonsterType() == EMonsterType::Acoustic)
-	{
-		
-		return;
-	}
+	
 	CheckCommonChaseTransition();
 }
 
