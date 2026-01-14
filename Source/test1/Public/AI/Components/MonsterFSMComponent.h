@@ -30,7 +30,6 @@ protected:
 	
 	virtual void HandleEyeChase();
 	virtual void HandleEarChase();
-	virtual void HandleHybridChase();
 	virtual void CheckCommonChaseTransition();
 	virtual void StopChasing();
 	

@@ -62,8 +62,6 @@ void UMonsterFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		break;
 	case EMonsterState::EarChase: HandleEarChase();
 		break;
-	case EMonsterState::HybridChase: HandleHybridChase();
-		break;
 	case EMonsterState::Attack: HandleAttack();
 		break;
 	case EMonsterState::Menace: HandleMenace();
@@ -217,42 +215,7 @@ void UMonsterFSMComponent::HandleEarChase()
 	CheckCommonChaseTransition();
 }
 
-//Don't use, I will delete.
-//삭제 예정
-void UMonsterFSMComponent::HandleHybridChase()
-{
-	if (!TargetActor || !Sensing || !AIC)
-	{
-		StopChasing();
-		return;
-	}
-	bool bCanSee = Sensing->CanSeeTarget(TargetActor);
-	bool bCanHear = Sensing->WasSoundHeard();
 
-	if (bCanSee || bCanHear)
-	{
-		LostTargetTimer = 0.0f;
-		if (bCanSee)
-		{
-			AIC->MoveToActor(TargetActor, 30.0f);
-		}
-		else
-		{
-			AIC->MoveToLocation(Sensing->GetLastSoundLocation(), 30.0f);
-		}
-	}
-	else
-	{
-		LostTargetTimer += GetWorld()->GetDeltaSeconds();
-		if (LostTargetTimer >= MonsterData->MaxLostTargetTime)
-		{
-			StopChasing();
-			return;
-		}
-		AIC->MoveToLocation(TargetActor->GetActorLocation(), 30.0f);
-	}
-	CheckCommonChaseTransition();
-}
 
 void UMonsterFSMComponent::CheckCommonChaseTransition()
 {

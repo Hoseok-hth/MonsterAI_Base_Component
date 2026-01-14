@@ -29,7 +29,7 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
 	}
 	
 	float MaxRange = MonsterData->BaseDetectionRange;
-	float fovAngle = MonsterData->BaseHearingRange;
+	float fovAngle = MonsterData->ViewAngle;
     
 	FVector MonsterLocation = GetOwner()->GetActorLocation();
 	FVector EyeLocation = MonsterLocation + FVector(0,0,MonsterData->EyeHeight);
@@ -101,28 +101,47 @@ void UMonsterSensingComponent::ReportSound(FVector SoundLocation, float VolumeMu
 
 AActor* UMonsterSensingComponent::FindNearestPlayer()
 {
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FProjectTags::Player, FoundActors);	
+	UWorld* World = GetWorld();
+	if (!World) return nullptr;
+
 	AActor* NearestPlayer = nullptr;
-	float MinDistance = TNumericLimits<float>::Max();
-	FVector MyLocation = GetOwner()->GetActorLocation();
 	
-	for (AActor* Actor: FoundActors)
+	float MinDistanceSq = TNumericLimits<float>::Max();
+	FVector MyLocation = GetOwner()->GetActorLocation();
+
+	
+	for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
-		if (Actor)
+		APlayerController* PC = Iterator->Get();
+		
+		if (PC && PC->GetPawn())
 		{
-			if (CanSeeTarget(Actor))
-			{
-				float Distance = FVector::Dist(MyLocation, Actor->GetActorLocation());
-				if (Distance < MinDistance)
-				{
-					MinDistance = Distance;
-					NearestPlayer = Actor;
-				}
-			}
+			AActor* TargetPawn = PC->GetPawn();
+
 			
+			if (!TargetPawn->ActorHasTag(FProjectTags::Player))
+			{
+				continue;
+			}
+
+			
+			float DistSq = FVector::DistSquared(MyLocation, TargetPawn->GetActorLocation());
+
+			
+			if (DistSq >= MinDistanceSq)
+			{
+				continue;
+			}
+
+			
+			if (CanSeeTarget(TargetPawn))
+			{
+				MinDistanceSq = DistSq;
+				NearestPlayer = TargetPawn;
+			}
 		}
 	}
+
 	return NearestPlayer;
 }
 bool UMonsterSensingComponent::IsPlayersGrouping(float Radius, int32 MinCount)

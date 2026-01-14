@@ -12,7 +12,7 @@ class TEST1_API ABaseMonster : public ACharacter
 
 public:
 	ABaseMonster(const FObjectInitializer& ObjectInitializer);
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI | Data")
 	const UMonsterDataAsset* MonsterData;
 
 protected:
