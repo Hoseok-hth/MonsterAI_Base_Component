@@ -9,6 +9,8 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "DrawDebugHelpers.h"
 #include "NavigationSystem.h"
+#include "AI/Data/MonsterDataAsset.h"
+#include "Interfaces/ExecutionTargetInterface.h"
 
 
 class AAIController;
@@ -30,6 +32,7 @@ void UMonsterFSMComponent::BeginPlay()
 		Sensing = OwnerMonster->FindComponentByClass<UMonsterSensingComponent>();
 		AIC = Cast<AAIController>(OwnerMonster->GetController());
 		MoveComp = OwnerMonster->GetCharacterMovement();
+		MonsterData = OwnerMonster->MonsterData;
 	}
 
 
@@ -114,7 +117,7 @@ void UMonsterFSMComponent::HandleIdle()
 
 	//Using StatusComponent sight Data, Set Searching Player Range(for performance)
 	//StatusComponent 에 저장된 시야 정보를 활용해서 플레이어 발견범위 제한(최적화)
-	EMonsterType Type = Status->GetMonsterType();
+	EMonsterType Type = MonsterData->MonsterType;
 	if (Type == EMonsterType::Visual || Type == EMonsterType::Hybrid)
 	{
 		AActor* VisibleTarget = Sensing->FindNearestPlayer();
@@ -162,7 +165,7 @@ void UMonsterFSMComponent::HandleEyeChase()
 	{
 		LostTargetTimer += GetWorld()->GetDeltaSeconds();
 		AIC->MoveToActor(TargetActor, 30.0f);
-		if (LostTargetTimer >= Status->GetMaxLostTargetTime())
+		if (LostTargetTimer >= MonsterData->MaxLostTargetTime)
 		{
 			StopChasing();
 			return;
@@ -181,7 +184,7 @@ void UMonsterFSMComponent::HandleEarChase()
 	
 	//if moster type is Hybrid, check monster can see any player. And chasing that player
 	//만약 몬스터가 hybrid type 이라면, 시야에 플레이어를 포착했는지 확인. 이후 시야에 포착된 플레이어 우선 추격
-	if (Status->GetMonsterType() == EMonsterType::Hybrid)
+	if (MonsterData->MonsterType == EMonsterType::Hybrid)
 	{
 		AActor* VisibleTarget = Sensing->FindNearestPlayer();
 		if (VisibleTarget)
@@ -197,10 +200,10 @@ void UMonsterFSMComponent::HandleEarChase()
 	//목적지(소리 근원지)에 도착후, MaxLostTargetTime까지 도착지에서 대기
 	//만약 추격도중 또는 대기도중 소리를 들었다면 목적지를 새로운 소리 근원지로 변경
 	float DistToSound = FVector::Dist(OwnerMonster->GetActorLocation(),Sensing->GetLastSoundLocation());
-	if (DistToSound <= Status->GetArrivalRadius() + 30.f)
+	if (DistToSound <= MonsterData->ArrivalRadius + 30.f)
 	{
 		LostTargetTimer += GetWorld()->GetDeltaSeconds();
-		if (LostTargetTimer >= Status->GetMaxLostTargetTime())
+		if (LostTargetTimer >= MonsterData->ArrivalRadius)
 		{
 			StopChasing();
 			return;
@@ -241,7 +244,7 @@ void UMonsterFSMComponent::HandleHybridChase()
 	else
 	{
 		LostTargetTimer += GetWorld()->GetDeltaSeconds();
-		if (LostTargetTimer >= Status->GetMaxLostTargetTime())
+		if (LostTargetTimer >= MonsterData->MaxLostTargetTime)
 		{
 			StopChasing();
 			return;
@@ -278,15 +281,16 @@ void UMonsterFSMComponent::CheckCommonChaseTransition()
 	
 	// if player is near than attack range, set state Attack
 	// 플레이어가 공격 사거리 안에 들어왔다면 공격
-	if (Distance <= Status->GetAttackRange())
+	if (Distance <= MonsterData->AttackRange)
 	{
 		SetState(EMonsterState::Attack);
+		ExecuteKill(TargetActor);
 		return;
 	}
 
 	//if player far than chase range, stop chase.
 	// 추격 범위 이탈 체크
-	if (Distance > Status->GetChaseRange())
+	if (Distance > MonsterData->AttackRange)
 	{
 		StopChasing();
 	}
@@ -319,9 +323,10 @@ void UMonsterFSMComponent::HandleAttack()
 			OwnerMonster->SetActorRotation(LookDir.Rotation());
 		}
 	}
+	
 	//if finish execution(ex execution animation motage), Change state Menace.
 	// 처형이 종료되면, Menace State로 변경
-	if (OwnerMonster && OwnerMonster->IsExecutionFinished())
+	if (Status && !Status->GetIsExecutionActive())
 	{
 		SetState(EMonsterState::Menace);
 	}
@@ -334,7 +339,7 @@ void UMonsterFSMComponent::HandleMenace()
 		return;
 	}
 	MenaceTimer += GetWorld()->GetDeltaSeconds();
-	if (MenaceTimer >= Status->GetMenaceDuration())
+	if (MenaceTimer >= MonsterData->MenaceDuration)
 	{
 		SetState(EMonsterState::Idle);
 		
@@ -379,7 +384,7 @@ void UMonsterFSMComponent::Patrol()
 		FVector MyLocation = OwnerMonster->GetActorLocation();
 		FVector TargetLocation = Targets[CurrentPatrolIndex]->GetActorLocation();
 		float DistToPoint = FVector::Dist2D(MyLocation, TargetLocation);
-		if (DistToPoint <= Status->GetArrivalRadius() + 50.f)
+		if (DistToPoint <= MonsterData->ArrivalRadius + 30.f)
 		{
 			if (Targets[CurrentPatrolIndex]->WaitTime > 0.0f)
 			{
@@ -455,12 +460,12 @@ void UMonsterFSMComponent::UpdateMovementSpeed(EMonsterState NewState)
 	switch (NewState)
 	{
 	case EMonsterState::Idle:
-		MoveComp->MaxWalkSpeed = Status->GetBaseSpeed();
+		MoveComp->MaxWalkSpeed = MonsterData->BaseSpeed;
 		break;
 	case EMonsterState::EyeChase:
 	case EMonsterState::EarChase:
 	case EMonsterState::HybridChase:
-		MoveComp->MaxWalkSpeed = Status->GetChaseSpeed();
+		MoveComp->MaxWalkSpeed = MonsterData->ChaseSpeed;
 		break;
 	case EMonsterState::Attack:
 	case EMonsterState::Menace:
@@ -469,6 +474,36 @@ void UMonsterFSMComponent::UpdateMovementSpeed(EMonsterState NewState)
 	default:
 		break;
 	}
+}
+
+void UMonsterFSMComponent::ExecuteKill(AActor* Victim)
+{
+	if (!Victim || !OwnerMonster)
+	{
+		return;
+	}
+	IExecutionTargetInterface* Target = Cast<IExecutionTargetInterface>(Victim);
+	if (!Target)
+	{
+		return;
+	}
+	Target->OnCaughtByMonster(OwnerMonster);
+	UAnimMontage* AnimExecution = MonsterData->ExecutionMontage;
+	if (!AnimExecution)
+	{
+		return;
+	}
+	UAnimInstance* AnimInstance = OwnerMonster->GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		OwnerMonster->PlayAnimMontage(AnimExecution);
+		
+		FOnMontageEnded MontageEndDelegate;
+		MontageEndDelegate.BindUObject(this,&UMonsterFSMComponent::OnExecutionMontageEnded);
+		AnimInstance->Montage_SetEndDelegate(MontageEndDelegate,AnimExecution);
+	}
+	
+	
 }
 
 void UMonsterFSMComponent::UpdateNearestPatrolIndex()
@@ -500,4 +535,12 @@ void UMonsterFSMComponent::UpdateNearestPatrolIndex()
 		}
 	}
 	CurrentPatrolIndex = NearestIndex;
+}
+
+void UMonsterFSMComponent::OnExecutionMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (MonsterData && Montage == MonsterData->ExecutionMontage)
+	{
+		Status->SetIsExecutionActive(false);
+	}
 }

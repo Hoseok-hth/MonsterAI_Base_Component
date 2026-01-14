@@ -20,31 +20,8 @@ public:
 	EIdleBehavior GetIdleBehavior() const { return IdleBehavior; }
 	const TArray<AMonsterPatrolPoint*>& GetPatrolTargets() const { return PatrolPoints; }
 	
-	//도착 판정 범위 반환
-	float GetArrivalRadius() const { return ArrivalRadius; }
-	
-	// monster speed 반환
-	float GetCurrentSpeed() const { return BaseSpeed * SpeedMultiplier; }
-	void SetSpeedMultiplier(float NewMultiplier) { SpeedMultiplier = NewMultiplier; }
-    float GetBaseSpeed() const { return BaseSpeed; }
-	float GetChaseSpeed() const {return ChaseSpeed; }
-	// monster sensing
-	float GetBaseDetectionRange() const { return BaseDetectionRange; }
-	float GetViewAngle() const { return ViewAngle; }
-	float GetBaseHearingRange() const { return BaseHearingRange; }
-	float GetEyeHeight() const { return EyeHeight; }
-	
-	float GetMaxLostTargetTime() const { return MaxLostTargetTime; }
-	float GetMenaceDuration() const { return MenaceDuration; }
-	
-	//monster type
-	EMonsterType GetMonsterType() const { return MonsterType; }
-
-	//monster attack
-	float GetAttackRange() const { return AttackRange; }
-	
-	//monster chase
-	float GetChaseRange() const { return ChaseRange; }
+	bool GetIsExecutionActive() const { return bIsExecutionActive; }
+	void SetIsExecutionActive(bool b){bIsExecutionActive = b;}
 private:
 	//default = visual sense
 	//기본값은 시야기반 감지
@@ -56,43 +33,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Monster Status")
 	EIdleBehavior IdleBehavior =EIdleBehavior::Static;
 	
+	bool bIsExecutionActive = false;
+	
+	
+	
 	//patrol location points(actor)
 	UPROPERTY(EditAnywhere, Category = "Monster Status | Patrol")
 	TArray<AMonsterPatrolPoint*> PatrolPoints;
 	
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float ArrivalRadius = 100.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float BaseSpeed = 450.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float ChaseSpeed = 700.f;
-
-	UPROPERTY(VisibleAnywhere, Category = "Monster Status")
-	float SpeedMultiplier = 1.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float BaseDetectionRange = 1200.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float ViewAngle = 90.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float BaseHearingRange = 1500.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float AttackRange = 150.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float ChaseRange = 2000.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float MenaceDuration = 3.0f;
-	
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float EyeHeight = 70.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	float MaxLostTargetTime = 5.f;
 };

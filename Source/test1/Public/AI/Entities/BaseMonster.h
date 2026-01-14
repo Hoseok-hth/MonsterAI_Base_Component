@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "BaseMonster.generated.h"
 
+class UMonsterDataAsset;
 UCLASS()
 class TEST1_API ABaseMonster : public ACharacter
 {
@@ -11,10 +12,8 @@ class TEST1_API ABaseMonster : public ACharacter
 
 public:
 	ABaseMonster(const FObjectInitializer& ObjectInitializer);
-	void ExecuteKill(AActor* Victim);
-	bool IsExecutionFinished() const{return !bIsExecutionActive;}
-	void FinishExecution(){bIsExecutionActive = false;}
-	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	const UMonsterDataAsset* MonsterData;
 
 protected:
 	virtual void BeginPlay() override;
@@ -28,13 +27,8 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Component")
 	class UMonsterSensingComponent* SensingComponent;
+	
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Component")
-	class UMonsterCombatComponent* CombatComponent;
-	
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Animation")
-	class UAnimMontage* ExecutionMontage;
 	
 private:
 	bool bIsExecutionActive = false;

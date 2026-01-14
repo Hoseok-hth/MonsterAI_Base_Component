@@ -5,6 +5,8 @@
 #include "AI/Type/EMonsterState.h" 
 #include "MonsterFSMComponent.generated.h"
 
+class UMonsterDataAsset;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class TEST1_API UMonsterFSMComponent : public UActorComponent
 {
@@ -18,7 +20,8 @@ public:
 
 	
 	void SetState(EMonsterState NewState);
-
+	UPROPERTY()
+	const UMonsterDataAsset* MonsterData;
 protected:
 	// 행동 패턴 핸들링 함수는 전부 가상화 해서 몬스터 타입에 맞게 상속받아서 새로 작성해야함
 	virtual void BeginPlay() override;
@@ -39,7 +42,7 @@ protected:
 	virtual void ExitCurrentState();
 	virtual void EnterNewState(EMonsterState PreviousState);
 	void UpdateMovementSpeed(EMonsterState NewState);
-	
+	void ExecuteKill(AActor* Victim);
 	UPROPERTY(VisibleAnywhere, Category = "AI")
 	AActor* TargetActor;
 	
@@ -51,6 +54,7 @@ protected:
 	class AAIController* AIC;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Component")
 	class UCharacterMovementComponent* MoveComp;
+	 
 	
 	int32 CurrentPatrolIndex = 0;
 	void UpdateNearestPatrolIndex();
@@ -61,6 +65,8 @@ private:
 	UPROPERTY()
 	class ABaseMonster* OwnerMonster;
 
+	UFUNCTION()
+	void OnExecutionMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	float DetectionTimer = 0.0f;
 	float DetectionInterval = 0.2f;
 	

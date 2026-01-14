@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "MonsterSensingComponent.generated.h"
 
+class UMonsterDataAsset;
 class ABaseMonster;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -20,6 +21,8 @@ protected:
 	
 public:
 	UMonsterSensingComponent();
+	UPROPERTY()
+	const UMonsterDataAsset* MonsterData;
 	
 	//sight 시야 기반 탐색
 	bool CanSeeTarget(AActor* Target);

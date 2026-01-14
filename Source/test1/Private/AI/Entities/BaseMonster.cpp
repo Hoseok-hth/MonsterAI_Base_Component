@@ -2,7 +2,7 @@
 #include "AI/Components/MonsterStatusComponent.h"
 #include "AI/Components/MonsterFSMComponent.h"
 #include "AI/Components/MonsterSensingComponent.h"
-#include "AI/Components/MonsterCombatComponent.h"
+#include "AI/Data/MonsterDataAsset.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Interfaces/ExecutionTargetInterface.h"
@@ -15,7 +15,6 @@ ABaseMonster::ABaseMonster(const FObjectInitializer& ObjectInitializer)
 	StatusComponent  = CreateDefaultSubobject<UMonsterStatusComponent>(TEXT("StatusComponent"));
 	FSMComponent     = CreateDefaultSubobject<UMonsterFSMComponent>(TEXT("FSMComponent"));
 	SensingComponent = CreateDefaultSubobject<UMonsterSensingComponent>(TEXT("SensingComponent"));
-	CombatComponent  = CreateDefaultSubobject<UMonsterCombatComponent>(TEXT("CombatComponent"));
 
 	// visualize capsule comp
 	if (GetCapsuleComponent())
@@ -28,30 +27,11 @@ void ABaseMonster::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (StatusComponent && GetCharacterMovement())
+	if (MonsterData && GetCharacterMovement())
 	{
-		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetCurrentSpeed();
+		GetCharacterMovement()->MaxWalkSpeed = MonsterData->BaseSpeed;
 	}
 }
 
-void ABaseMonster::ExecuteKill(AActor* Victim)
-{
-	if (!Victim)
-	{
-		return;
-	}
-	IExecutionTargetInterface* Target = Cast<IExecutionTargetInterface>(Victim);
-	
-	if(Target)
-	{
-		bIsExecutionActive = true;
-		Target->OnCaughtByMonster(this);
-		
-		if (ExecutionMontage)
-		{
-			PlayAnimMontage(ExecutionMontage);
-		}
-	}
-	
-}
+
 
