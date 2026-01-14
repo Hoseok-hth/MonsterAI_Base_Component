@@ -68,6 +68,8 @@ void UMonsterFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		break;
 	case EMonsterState::Menace: HandleMenace();
 		break;
+	case EMonsterState::Special: HandleSpecial();
+		break;
 	default: break;
 	}
 }
@@ -374,6 +376,10 @@ void UMonsterFSMComponent::HandleMenace()
 		SetState(EMonsterState::Idle);
 		
 	}
+}
+
+void UMonsterFSMComponent::HandleSpecial()
+{
 }
 
 void UMonsterFSMComponent::Patrol()
