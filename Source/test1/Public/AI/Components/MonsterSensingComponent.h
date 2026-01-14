@@ -4,7 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "MonsterSensingComponent.generated.h"
 
-class BaseMonster;
+class ABaseMonster;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class TEST1_API UMonsterSensingComponent : public UActorComponent
@@ -13,6 +13,11 @@ class TEST1_API UMonsterSensingComponent : public UActorComponent
 
 protected:
 	virtual void BeginPlay() override;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Component")
+	class UMonsterStatusComponent* Status;
+	
+	
 public:
 	UMonsterSensingComponent();
 	
@@ -29,11 +34,11 @@ public:
 	void SetTriggerAlert(bool bAlert){ bTriggered = bAlert;}
 	bool GetIsTriggerd() const {return bTriggered;}
 	
-	// 가장 가까운 플레이어 반환, 
+	// 가장 가까운 보이는 플레이어 반환
 	AActor* FindNearestPlayer();
 	
 	
-	//기획에서 뭉쳐있으면 쫒아가는 부분 구현
+	//기획에서 뭉쳐있으면 쫒아가는 부분 구현x
 	bool IsPlayersGrouping(float Radius, int32 MinCount);
 	bool IsTargetInLight(AActor* Target);
 	
@@ -45,7 +50,10 @@ public:
 	//event
 	bool bTriggered = false;
 	
+private:
+	UPROPERTY()
 	ABaseMonster* Owner;
+	
 	
 	
 };

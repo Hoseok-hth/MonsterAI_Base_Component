@@ -25,7 +25,6 @@ protected:
 	virtual void HandleIdle();
 	virtual void Patrol();
 	
-	//virtual void HandleChase();
 	virtual void HandleEyeChase();
 	virtual void HandleEarChase();
 	virtual void HandleHybridChase();
@@ -38,12 +37,18 @@ protected:
 	virtual void ExitCurrentState();
 	virtual void EnterNewState(EMonsterState PreviousState);
 	void UpdateMovementSpeed(EMonsterState NewState);
+	
 	UPROPERTY(VisibleAnywhere, Category = "AI")
 	AActor* TargetActor;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Component")
 	class UMonsterStatusComponent* Status;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Component")
 	class UMonsterSensingComponent* Sensing;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Component")
 	class AAIController* AIC;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Component")
+	class UCharacterMovementComponent* MoveComp;
 	
 	int32 CurrentPatrolIndex = 0;
 	void UpdateNearestPatrolIndex();
