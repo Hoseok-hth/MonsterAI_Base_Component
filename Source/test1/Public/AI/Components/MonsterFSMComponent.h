@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "AI/Type/EMonsterState.h" // 1단계에서 만든 열거형
+#include "AI/Type/EMonsterState.h" 
 #include "MonsterFSMComponent.generated.h"
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
