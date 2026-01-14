@@ -5,14 +5,11 @@
 #include "AI/Components/MonsterSensingComponent.h"
 #include "AI/Components/MonsterStatusComponent.h"
 #include "AI/Entities/BaseMonster.h"
-#include "Engine/OverlapResult.h"
-#include "Kismet/GameplayStatics.h"
-#include "Global/Define.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "DrawDebugHelpers.h"
 #include "NavigationSystem.h"
-#include "Interfaces/ExecutionTargetInterface.h"
+
 
 class AAIController;
 
@@ -120,53 +117,19 @@ void UMonsterFSMComponent::HandleIdle()
 	EMonsterType Type = Status->GetMonsterType();
 	if (Type == EMonsterType::Visual || Type == EMonsterType::Hybrid)
 	{
-		FVector MyLocation = OwnerMonster->GetActorLocation();
-		float DetectionRadius = Status->GetBaseDetectionRange();
-
-
-		TArray<FOverlapResult> OverlapResults;
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(OwnerMonster);
-
-		bool bHit = GetWorld()->OverlapMultiByChannel(
-			OverlapResults,
-			MyLocation,
-			FQuat::Identity,
-			ECC_Pawn,
-			FCollisionShape::MakeSphere(DetectionRadius),
-			QueryParams
-		);
-
-		if (bHit)
+		AActor* VisibleTarget = Sensing->FindNearestPlayer();
+		if (VisibleTarget)
 		{
-			float NearestDistance = TNumericLimits<float>::Max();
-
-			for (const FOverlapResult& OverlapResult : OverlapResults)
-			{
-				AActor* OverlappedActor = OverlapResult.GetActor();
-				//if exist player in range(by "Player" Tag)-> Set TargetActor(Nearest)
-				//플레이어가 존재한 경우(player Tag 기반) -> 타겟 플레이어 설정(가장 가까운 플레이어)
-				if (OverlappedActor && OverlappedActor->ActorHasTag(FProjectTags::Player))
-				{
-					if (Sensing->CanSeeTarget(OverlappedActor))
-					{
-						float Distance = OwnerMonster->GetDistanceTo(OverlappedActor);
-						if (Distance <= NearestDistance)
-						{
-							NearestDistance = Distance;
-							TargetActor = OverlappedActor;
-						}
-					}
-				}
-			}
-			//if monster see player -> Set EyeChase state
-			//몬스터를 발견한다면 시야추격 모드
-			if (TargetActor)
-			{
-				SetState(EMonsterState::EyeChase);
-				return;
-			}
+			TargetActor = VisibleTarget;
 		}
+		//if monster see player -> Set EyeChase state
+		//몬스터를 발견한다면 시야추격 모드
+		if (TargetActor)
+		{
+			SetState(EMonsterState::EyeChase);
+			return;
+		}
+		
 	}
 	//if monster heard noise -> Set EarChase State
 	//몬스터가 소리를 들었다면 -> EarChase State 설정
@@ -247,7 +210,11 @@ void UMonsterFSMComponent::HandleEarChase()
 		LostTargetTimer = 0.0f;
 		AIC->MoveToLocation(Sensing->GetLastSoundLocation());
 	}
-	
+	if (Status->GetMonsterType() == EMonsterType::Acoustic)
+	{
+		
+		return;
+	}
 	CheckCommonChaseTransition();
 }
 
@@ -291,7 +258,7 @@ void UMonsterFSMComponent::HandleHybridChase()
 void UMonsterFSMComponent::CheckCommonChaseTransition()
 {
 	if (!OwnerMonster || !Status) return;
-
+	
 	// if monster have Target and chasing, update Distance to target
 	// 현재 추격 중인 타겟이 있다면 거리 갱신
 	float Distance = TargetActor ? OwnerMonster->GetDistanceTo(TargetActor) : TNumericLimits<float>::Max();
