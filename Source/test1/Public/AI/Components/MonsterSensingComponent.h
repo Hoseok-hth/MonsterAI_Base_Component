@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "MonsterSensingComponent.generated.h"
 
+class UMonsterStatusComponent;
 class UMonsterDataAsset;
 class ABaseMonster;
 
@@ -16,7 +17,7 @@ protected:
 	virtual void BeginPlay() override;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Component")
-	class UMonsterStatusComponent* Status;
+	UMonsterStatusComponent* Status;
 	
 	
 public:

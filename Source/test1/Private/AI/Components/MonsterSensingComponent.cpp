@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "Global/Define.h"
 #include "AI/Data/MonsterDataAsset.h"
+#include "Kismet/GameplayStatics.h"
 
 
 void UMonsterSensingComponent::BeginPlay()
@@ -25,6 +26,7 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
 {
 	if (!Target ||!Status)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("No Target or Status Comp"));
 		return false;
 	}
 	
@@ -38,6 +40,8 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
     
 	if (Distance > MaxRange)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Actor Distance Too Far"));
+
 		return false;
 	}
 	FVector Forward = GetOwner()->GetActorForwardVector();
@@ -48,6 +52,7 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
     
 	if (Angle > fovAngle * 0.5f)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Out of Angle"));
 		return false;
 	}
 	TArray<FVector> CheckPoints;
@@ -70,10 +75,19 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
 				{
 					DrawDebugLine(GetWorld(), EyeLocation, TargetPoint, FColor::Green, false, 0.1f);
 					return true;
+				}else
+				{
+					DrawDebugLine(GetWorld(), EyeLocation, HitResult.ImpactPoint, FColor::Red, false, 0.1f);
+					UE_LOG(LogTemp, Warning, TEXT("Blocked by: %s"), *HitActor->GetName());
 				}
+			}else
+			{
+				DrawDebugLine(GetWorld(), EyeLocation, TargetPoint, FColor::Red, false, 0.1f);
+				UE_LOG(LogTemp, Warning, TEXT("Hit Nothing (Passed through)"));
 			}
 		}  
 	}
+	UE_LOG(LogTemp, Warning, TEXT("Actor behind something"));
 	return false;
 }
 
@@ -101,7 +115,46 @@ void UMonsterSensingComponent::ReportSound(FVector SoundLocation, float VolumeMu
 
 AActor* UMonsterSensingComponent::FindNearestPlayer()
 {
+	//더미 테스트용 임시 코드, 최적화 덜 됨
 	UWorld* World = GetWorld();
+	if (!World) return nullptr;
+
+	AActor* NearestPlayer = nullptr;
+	float MinDistanceSq = TNumericLimits<float>::Max();
+	FVector MyLocation = GetOwner()->GetActorLocation();
+
+	
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsWithTag(World, FProjectTags::Player, FoundActors);
+
+	for (AActor* Actor : FoundActors)
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("Found Actor"));
+		if (!Actor) continue;
+
+		
+		float DistSq = FVector::DistSquared(MyLocation, Actor->GetActorLocation());
+
+		
+		if (DistSq >= MinDistanceSq)
+		{
+			continue;
+		}
+
+		
+		if (CanSeeTarget(Actor))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Can See Actor"));
+			MinDistanceSq = DistSq;
+			NearestPlayer = Actor;
+		}
+	}
+
+	return NearestPlayer;
+	
+	
+	//실제 적용할 코드, 더미 테스트를 위해 잠시 주석처리
+	/*UWorld* World = GetWorld();
 	if (!World) return nullptr;
 
 	AActor* NearestPlayer = nullptr;
@@ -142,7 +195,7 @@ AActor* UMonsterSensingComponent::FindNearestPlayer()
 		}
 	}
 
-	return NearestPlayer;
+	return NearestPlayer;*/
 }
 bool UMonsterSensingComponent::IsPlayersGrouping(float Radius, int32 MinCount)
 {

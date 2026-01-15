@@ -10,7 +10,9 @@
 #include "DrawDebugHelpers.h"
 #include "NavigationSystem.h"
 #include "AI/Data/MonsterDataAsset.h"
+#include "Components/AudioComponent.h"
 #include "Interfaces/ExecutionTargetInterface.h"
+#include "Net/UnrealNetwork.h"
 
 
 class AAIController;
@@ -32,6 +34,7 @@ void UMonsterFSMComponent::BeginPlay()
 		Sensing = OwnerMonster->FindComponentByClass<UMonsterSensingComponent>();
 		AIC = Cast<AAIController>(OwnerMonster->GetController());
 		MoveComp = OwnerMonster->GetCharacterMovement();
+		AudioComp = OwnerMonster->GetAudioLoopComponent();
 		MonsterData = OwnerMonster->MonsterData;
 	}
 
@@ -46,11 +49,7 @@ void UMonsterFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (!OwnerMonster)
-	{
-		return;
-	}
-	if (!OwnerMonster->HasAuthority())
+	if (!OwnerMonster || !OwnerMonster->HasAuthority())
 	{
 		return;
 	}
@@ -119,13 +118,15 @@ void UMonsterFSMComponent::HandleIdle()
 	EMonsterType Type = MonsterData->MonsterType;
 	if (Type == EMonsterType::Visual || Type == EMonsterType::Hybrid)
 	{
+		
+
 		AActor* VisibleTarget = Sensing->FindNearestPlayer();
 		if (VisibleTarget)
 		{
 			TargetActor = VisibleTarget;
 		}
 		//if monster see player -> Set EyeChase state
-		//몬스터를 발견한다면 시야추격 모드
+		//플레이어를 발견한다면 시야추격 모드
 		if (TargetActor)
 		{
 			SetState(EMonsterState::EyeChase);
@@ -254,7 +255,7 @@ void UMonsterFSMComponent::CheckCommonChaseTransition()
 
 	//if player further than chase range, stop chase.
 	// 추격 범위 이탈 체크
-	if (Distance > MonsterData->AttackRange)
+	if (Distance > MonsterData->ChaseRange)
 	{
 		StopChasing();
 	}
@@ -402,6 +403,7 @@ void UMonsterFSMComponent::ExitCurrentState()
 void UMonsterFSMComponent::EnterNewState(EMonsterState PreviousState)
 {
 	UpdateMovementSpeed(CurrentState);
+	UpdateLoopSound(CurrentState);
 	switch (CurrentState)
 	{
 	case EMonsterState::Idle:
@@ -448,9 +450,49 @@ void UMonsterFSMComponent::UpdateMovementSpeed(EMonsterState NewState)
 	}
 }
 
+void UMonsterFSMComponent::UpdateLoopSound(EMonsterState NewState)
+{
+	if (!AudioComp || !MonsterData) return;
+
+	switch (NewState)
+	{
+	case EMonsterState::Idle:
+		if (MonsterData->IdleSound)
+		{
+			AudioComp->SetSound(MonsterData->IdleSound);
+			AudioComp->FadeIn(0.5f, MonsterData->IdleSoundVolume); 
+		}
+		break;
+
+	case EMonsterState::EyeChase:
+	case EMonsterState::EarChase:
+	case EMonsterState::HybridChase:
+		AudioComp->FadeOut(0.5f, MonsterData->ChaseSoundVolume);
+		if (MonsterData->ChaseSound)
+		{
+			AudioComp->SetSound(MonsterData->ChaseSound);
+			AudioComp->FadeIn(0.5f,1.0f);
+		}
+		break;
+
+	case EMonsterState::Attack:
+	case EMonsterState::Menace:
+		AudioComp->FadeOut(0.3f, 0.0f);
+		break;
+        
+	case EMonsterState::Stunned:
+		AudioComp->Stop();
+		break;
+
+	default:
+		AudioComp->Stop();
+		break;
+	}
+}
+
 void UMonsterFSMComponent::ExecuteKill(AActor* Victim)
 {
-	if (!Victim || !OwnerMonster)
+	if (!Victim || !OwnerMonster || !OwnerMonster->HasAuthority())
 	{
 		return;
 	}
@@ -472,18 +514,15 @@ void UMonsterFSMComponent::ExecuteKill(AActor* Victim)
 	{
 		return;
 	}
-	UAnimInstance* AnimInstance = OwnerMonster->GetMesh()->GetAnimInstance();
-	if (AnimInstance)
+	
+	if (Status)
 	{
-		float Duration = OwnerMonster->PlayAnimMontage(AnimExecution);
-		if (Duration > 0.0f)
-		{
-			Status->SetIsExecutionActive(true);
-			FOnMontageEnded MontageEndDelegate;
-			MontageEndDelegate.BindUObject(this,&UMonsterFSMComponent::OnExecutionMontageEnded);
-			AnimInstance->Montage_SetEndDelegate(MontageEndDelegate,AnimExecution);
-		}
+		Status->SetIsExecutionActive(true);
 	}
+	
+	MulticastPlayExecutionMontage(AnimExecution);
+	
+	
 	
 	
 }
@@ -517,6 +556,34 @@ void UMonsterFSMComponent::UpdateNearestPatrolIndex()
 		}
 	}
 	CurrentPatrolIndex = NearestIndex;
+}
+
+void UMonsterFSMComponent::OnRep_CurrentState()
+{
+	UpdateLoopSound(CurrentState);
+}
+
+void UMonsterFSMComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(UMonsterFSMComponent, CurrentState);
+}
+
+void UMonsterFSMComponent::MulticastPlayExecutionMontage_Implementation(UAnimMontage* MontageToPlay)
+{
+	if (!OwnerMonster || !MontageToPlay) return;
+	UAnimInstance* AnimInstance = OwnerMonster->GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		float Duration = OwnerMonster->PlayAnimMontage(MontageToPlay);
+		if (Duration > 0.0f && OwnerMonster->HasAuthority())
+		{
+			FOnMontageEnded MontageEndDelegate;
+			MontageEndDelegate.BindUObject(this,&UMonsterFSMComponent::OnExecutionMontageEnded);
+			AnimInstance->Montage_SetEndDelegate(MontageEndDelegate,MontageToPlay);
+		}
+	}
 }
 
 void UMonsterFSMComponent::OnExecutionMontageEnded(UAnimMontage* Montage, bool bInterrupted)

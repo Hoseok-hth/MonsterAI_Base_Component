@@ -21,11 +21,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sense Type")
 	EMonsterType MonsterType = EMonsterType::Visual;
 	
-	//default = static(don't patrol)
-	//idle 기본 행동은 patrol없이 가만 멈춰있음
-	UPROPERTY(EditAnywhere, Category = "Patrol Type")
-	EIdleBehavior IdleBehavior =EIdleBehavior::Static;
-	
 	UPROPERTY(EditAnywhere, Category = "Chase")
 	float ArrivalRadius = 100.f;
 	
@@ -61,16 +56,25 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	class UAnimMontage* ExecutionMontage;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	class UAnimMontage* StunnedMontage;
+	
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	USoundBase* WalkSound;
-	
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundBase* IdleSound;
-	
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	USoundBase* RunSound;
 	
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundBase* Howling;
+	USoundBase* IdleSound;
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundBase* ChaseSound;
+	
+	
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundBase* HowlingSound;
+	
+	UPROPERTY(EditAnywhere, Category = "Volume")
+	float IdleSoundVolume = 1.0f;
+	UPROPERTY(EditAnywhere, Category = "Volume")
+	float ChaseSoundVolume = 1.0f;
 };

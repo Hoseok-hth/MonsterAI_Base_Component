@@ -4,7 +4,11 @@
 #include "GameFramework/Character.h"
 #include "BaseMonster.generated.h"
 
+class UMonsterFSMComponent;
+class UMonsterStatusComponent;
+class UMonsterSensingComponent;
 class UMonsterDataAsset;
+class UAudioComponent;
 UCLASS()
 class TEST1_API ABaseMonster : public ACharacter
 {
@@ -14,19 +18,23 @@ public:
 	ABaseMonster(const FObjectInitializer& ObjectInitializer);
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI | Data")
 	const UMonsterDataAsset* MonsterData;
-
+	UMonsterFSMComponent* GetFSMComp()const{ return FSMComponent; };
+	UAudioComponent* GetAudioLoopComponent() const { return AudioLoopComponent; }
 protected:
 	virtual void BeginPlay() override;
 
 	// components 스테이터스, state , sensing, combat,
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Component")
-	class UMonsterStatusComponent* StatusComponent;
+	UMonsterStatusComponent* StatusComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Component")
-	class UMonsterFSMComponent* FSMComponent;
+	UMonsterFSMComponent* FSMComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Component")
-	class UMonsterSensingComponent* SensingComponent;
+	UMonsterSensingComponent* SensingComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Component")
+	UAudioComponent* AudioLoopComponent;
 	
 
 	

@@ -20,6 +20,7 @@ public:
 
 	
 	void SetState(EMonsterState NewState);
+	EMonsterState GetCurrentState()const{return CurrentState;};
 	UPROPERTY()
 	const UMonsterDataAsset* MonsterData;
 protected:
@@ -42,7 +43,8 @@ protected:
 	virtual void ExitCurrentState();
 	virtual void EnterNewState(EMonsterState PreviousState);
 	void UpdateMovementSpeed(EMonsterState NewState);
-	void ExecuteKill(AActor* Victim);
+	void UpdateLoopSound(EMonsterState NewState);
+	
 	UPROPERTY(VisibleAnywhere, Category = "AI")
 	AActor* TargetActor;
 	
@@ -54,17 +56,29 @@ protected:
 	class AAIController* AIC;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Component")
 	class UCharacterMovementComponent* MoveComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Component")
+	class UAudioComponent* AudioComp;
 	 
 	
 	int32 CurrentPatrolIndex = 0;
 	void UpdateNearestPatrolIndex();
 	
+	UFUNCTION()
+	void OnRep_CurrentState();
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 private:
-	UPROPERTY(VisibleAnywhere, Category = "AI")
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentState, VisibleAnywhere, Category = "AI")
 	EMonsterState CurrentState = EMonsterState::None;
 	UPROPERTY()
 	class ABaseMonster* OwnerMonster;
 
+	void ExecuteKill(AActor* Victim);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayExecutionMontage(UAnimMontage* MontageToPlay);
+	
 	UFUNCTION()
 	void OnExecutionMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	float DetectionTimer = 0.0f;

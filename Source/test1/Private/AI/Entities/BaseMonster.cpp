@@ -3,6 +3,7 @@
 #include "AI/Components/MonsterFSMComponent.h"
 #include "AI/Components/MonsterSensingComponent.h"
 #include "AI/Data/MonsterDataAsset.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Interfaces/ExecutionTargetInterface.h"
@@ -15,7 +16,10 @@ ABaseMonster::ABaseMonster(const FObjectInitializer& ObjectInitializer)
 	StatusComponent  = CreateDefaultSubobject<UMonsterStatusComponent>(TEXT("StatusComponent"));
 	FSMComponent     = CreateDefaultSubobject<UMonsterFSMComponent>(TEXT("FSMComponent"));
 	SensingComponent = CreateDefaultSubobject<UMonsterSensingComponent>(TEXT("SensingComponent"));
-
+	AudioLoopComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioLoopComponent"));
+	AudioLoopComponent->SetupAttachment(GetRootComponent());
+	AudioLoopComponent->SetAutoActivate(false);
+	
 	// visualize capsule comp
 	if (GetCapsuleComponent())
 	{
