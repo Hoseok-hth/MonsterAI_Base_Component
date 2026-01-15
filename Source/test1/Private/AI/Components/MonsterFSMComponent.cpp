@@ -115,7 +115,7 @@ void UMonsterFSMComponent::HandleIdle()
 	}
 
 	
-	EMonsterType Type = MonsterData->MonsterType;
+	EMonsterType Type = Status->GetMonsterType();
 	if (Type == EMonsterType::Visual || Type == EMonsterType::Hybrid)
 	{
 		
@@ -165,7 +165,7 @@ void UMonsterFSMComponent::HandleEyeChase()
 	{
 		LostTargetTimer += GetWorld()->GetDeltaSeconds();
 		AIC->MoveToActor(TargetActor, 30.0f);
-		if (LostTargetTimer >= MonsterData->MaxLostTargetTime)
+		if (LostTargetTimer >= Status->GetMaxLostTargetTime())
 		{
 			StopChasing();
 			return;
@@ -184,7 +184,7 @@ void UMonsterFSMComponent::HandleEarChase()
 	
 	//if monster type is Hybrid, check monster can see any player. And chasing that player
 	//만약 몬스터가 hybrid type 이라면, 시야에 플레이어를 포착했는지 확인. 이후 시야에 포착된 플레이어 우선 추격
-	if (MonsterData->MonsterType == EMonsterType::Hybrid)
+	if (Status->GetMonsterType() == EMonsterType::Hybrid)
 	{
 		AActor* VisibleTarget = Sensing->FindNearestPlayer();
 		if (VisibleTarget)
@@ -200,10 +200,10 @@ void UMonsterFSMComponent::HandleEarChase()
 	//목적지(소리 근원지)에 도착후, MaxLostTargetTime까지 도착지에서 대기
 	//만약 추격도중 또는 대기도중 소리를 들었다면 목적지를 새로운 소리 근원지로 변경
 	float DistToSound = FVector::Dist(OwnerMonster->GetActorLocation(),Sensing->GetLastSoundLocation());
-	if (DistToSound <= MonsterData->ArrivalRadius + 30.f)
+	if (DistToSound <= Status->GetArrivalRadius() + 30.f)
 	{
 		LostTargetTimer += GetWorld()->GetDeltaSeconds();
-		if (LostTargetTimer >= MonsterData->ArrivalRadius)
+		if (LostTargetTimer >= Status->GetMaxLostTargetTime())
 		{
 			StopChasing();
 			return;
@@ -246,7 +246,7 @@ void UMonsterFSMComponent::CheckCommonChaseTransition()
 	
 	// if player is near than attack range, set state Attack
 	// 플레이어가 공격 사거리 안에 들어왔다면 공격
-	if (Distance <= MonsterData->AttackRange)
+	if (Distance <= Status->GetAttackRange())
 	{
 		SetState(EMonsterState::Attack);
 		ExecuteKill(TargetActor);
@@ -255,7 +255,7 @@ void UMonsterFSMComponent::CheckCommonChaseTransition()
 
 	//if player further than chase range, stop chase.
 	// 추격 범위 이탈 체크
-	if (Distance > MonsterData->ChaseRange)
+	if (Distance > Status->GetChaseRange())
 	{
 		StopChasing();
 	}
@@ -309,7 +309,7 @@ void UMonsterFSMComponent::HandleMenace()
 		return;
 	}
 	MenaceTimer += GetWorld()->GetDeltaSeconds();
-	if (MenaceTimer >= MonsterData->MenaceDuration)
+	if (MenaceTimer >= Status->GetMenaceTime())
 	{
 		SetState(EMonsterState::Idle);
 		
@@ -358,7 +358,7 @@ void UMonsterFSMComponent::Patrol()
 		FVector MyLocation = OwnerMonster->GetActorLocation();
 		FVector TargetLocation = Targets[CurrentPatrolIndex]->GetActorLocation();
 		float DistToPoint = FVector::Dist2D(MyLocation, TargetLocation);
-		if (DistToPoint <= MonsterData->ArrivalRadius + 30.f)
+		if (DistToPoint <= Status->GetArrivalRadius() + 30.f)
 		{
 			if (Targets[CurrentPatrolIndex]->WaitTime > 0.0f)
 			{
@@ -435,12 +435,12 @@ void UMonsterFSMComponent::UpdateMovementSpeed(EMonsterState NewState)
 	switch (NewState)
 	{
 	case EMonsterState::Idle:
-		MoveComp->MaxWalkSpeed = MonsterData->BaseSpeed;
+		MoveComp->MaxWalkSpeed = Status->GetBaseSpeed();
 		break;
 	case EMonsterState::EyeChase:
 	case EMonsterState::EarChase:
 	case EMonsterState::HybridChase:
-		MoveComp->MaxWalkSpeed = MonsterData->ChaseSpeed;
+		MoveComp->MaxWalkSpeed = Status->GetChaseSpeed();
 		break;
 	case EMonsterState::Attack:
 	case EMonsterState::Menace:
@@ -453,7 +453,7 @@ void UMonsterFSMComponent::UpdateMovementSpeed(EMonsterState NewState)
 
 void UMonsterFSMComponent::UpdateLoopSound(EMonsterState NewState)
 {
-	if (!AudioComp || !MonsterData) return;
+	if (!AudioComp || !MonsterData || !Status) return;
 
 	switch (NewState)
 	{
@@ -461,14 +461,14 @@ void UMonsterFSMComponent::UpdateLoopSound(EMonsterState NewState)
 		if (MonsterData->IdleSound)
 		{
 			AudioComp->SetSound(MonsterData->IdleSound);
-			AudioComp->FadeIn(0.5f, MonsterData->IdleSoundVolume); 
+			AudioComp->FadeIn(0.5f, Status->GetIdleSoundVolume()); 
 		}
 		break;
 
 	case EMonsterState::EyeChase:
 	case EMonsterState::EarChase:
 	case EMonsterState::HybridChase:
-		AudioComp->FadeOut(0.5f, MonsterData->ChaseSoundVolume);
+		AudioComp->FadeOut(0.5f, Status->GetChaseSoundVolume());
 		if (MonsterData->ChaseSound)
 		{
 			AudioComp->SetSound(MonsterData->ChaseSound);

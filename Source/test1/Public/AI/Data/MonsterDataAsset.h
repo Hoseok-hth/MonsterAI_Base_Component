@@ -46,7 +46,7 @@ public:
 	float ChaseRange = 2000.f;
 	
 	UPROPERTY(EditAnywhere, Category = "Duration")
-	float MenaceDuration = 3.0f;
+	float MenaceTime = 3.0f;
 	
 	UPROPERTY(EditAnywhere, Category = "Spec")
 	float EyeHeight = 70.f;

@@ -30,10 +30,14 @@ ABaseMonster::ABaseMonster(const FObjectInitializer& ObjectInitializer)
 void ABaseMonster::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (MonsterData && GetCharacterMovement())
+	if (StatusComponent && MonsterData)
 	{
-		GetCharacterMovement()->MaxWalkSpeed = MonsterData->BaseSpeed;
+		StatusComponent->InitData(MonsterData);
+		if (GetCharacterMovement())
+		{
+			GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetBaseSpeed();
+
+		}
 	}
 }
 

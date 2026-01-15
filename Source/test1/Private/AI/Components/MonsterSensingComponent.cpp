@@ -12,8 +12,12 @@ void UMonsterSensingComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	Owner = Cast<ABaseMonster>(GetOwner());
-	Status = Owner->FindComponentByClass<UMonsterStatusComponent>();
-	MonsterData = Owner->MonsterData;
+	if (Owner)
+	{
+		Status = Owner->FindComponentByClass<UMonsterStatusComponent>();
+		MonsterData = Owner->MonsterData;
+	}
+	
 }
 
 UMonsterSensingComponent::UMonsterSensingComponent()
@@ -31,11 +35,11 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
 		return false;
 	}
 	
-	float MaxRange = MonsterData->BaseDetectionRange;
-	float fovAngle = MonsterData->ViewAngle;
+	float MaxRange = Status->GetBaseDetectionRange();
+	float fovAngle = Status->GetViewAngle();
     
 	FVector MonsterLocation = GetOwner()->GetActorLocation();
-	FVector EyeLocation = MonsterLocation + FVector(0,0,MonsterData->EyeHeight);
+	FVector EyeLocation = MonsterLocation + FVector(0,0,Status->GetEyeHeight());
 	FVector TargetLocation = Target->GetActorLocation();
 	float Distance = FVector::Dist(MonsterLocation, TargetLocation);
     
@@ -100,7 +104,7 @@ void UMonsterSensingComponent::ReportSound(FVector SoundLocation, float VolumeMu
 	{
 		return;
 	}
-	float FinalHearingRange = MonsterData->BaseHearingRange * VolumeMultiplier;
+	float FinalHearingRange = Status->GetBaseHearingRange() * VolumeMultiplier;
 	float Distance = FVector::Dist(Owner->GetActorLocation(), SoundLocation);
 	
 	if (Distance <= FinalHearingRange)
