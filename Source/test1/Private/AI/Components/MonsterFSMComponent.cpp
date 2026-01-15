@@ -297,6 +297,7 @@ void UMonsterFSMComponent::HandleAttack()
 	// 처형이 종료되면, Menace State로 변경
 	if (Status && !Status->GetIsExecutionActive())
 	{
+		StopChasing();
 		SetState(EMonsterState::Menace);
 	}
 }

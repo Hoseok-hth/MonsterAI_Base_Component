@@ -14,4 +14,5 @@ class TEST1_API IExecutionTargetInterface
 public:
 	virtual void OnCaughtByMonster(AActor* Killer) = 0;
 	virtual bool IsHidden() const = 0;
+	virtual bool IsDead() const { return false; }
 };

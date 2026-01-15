@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "Global/Define.h"
 #include "AI/Data/MonsterDataAsset.h"
+#include "Interfaces/ExecutionTargetInterface.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -131,7 +132,8 @@ AActor* UMonsterSensingComponent::FindNearestPlayer()
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("Found Actor"));
 		if (!Actor) continue;
-
+		IExecutionTargetInterface* Target = Cast<IExecutionTargetInterface>(Actor);
+		if (!Target || Target->IsDead()) continue;
 		
 		float DistSq = FVector::DistSquared(MyLocation, Actor->GetActorLocation());
 

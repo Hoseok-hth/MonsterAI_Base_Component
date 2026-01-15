@@ -21,6 +21,7 @@ public:
 	
 	virtual void OnCaughtByMonster(class AActor* Monster) override;
 	virtual bool IsHidden() const override;
+	virtual bool IsDead() const override { return bIsDead; }
 private:
 	FTimerHandle NoiseTimerHandle;
 
@@ -31,4 +32,5 @@ private:
 
 	// 테스트용 소음 크기 (1.0 = 기본)
 	float NoiseLoudness = 1.0f;
+	bool bIsDead = false;
 };

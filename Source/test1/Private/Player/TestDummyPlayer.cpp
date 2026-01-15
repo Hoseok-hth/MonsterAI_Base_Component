@@ -26,6 +26,9 @@ void ATestDummyPlayer::BeginPlay()
 
 void ATestDummyPlayer::OnCaughtByMonster(AActor* Monster)
 {
+	if (bIsDead) return;
+	bIsDead = true;
+
 	UE_LOG(LogTemp, Error, TEXT("!!!! 몬스터에게 잡혔습니다! 처형 당함 !!!!"));
 
 	
