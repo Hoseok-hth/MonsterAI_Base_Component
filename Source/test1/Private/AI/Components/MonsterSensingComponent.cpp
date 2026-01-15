@@ -4,7 +4,7 @@
 #include "GameFramework/Character.h"
 #include "Global/Define.h"
 #include "AI/Data/MonsterDataAsset.h"
-#include "Kismet/GameplayStatics.h"
+
 
 void UMonsterSensingComponent::BeginPlay()
 {

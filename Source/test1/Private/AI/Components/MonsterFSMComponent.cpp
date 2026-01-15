@@ -68,6 +68,8 @@ void UMonsterFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		break;
 	case EMonsterState::Special: HandleSpecial();
 		break;
+	case EMonsterState::Stunned: HandleStunned();
+		break;
 	default: break;
 	}
 }
@@ -113,8 +115,7 @@ void UMonsterFSMComponent::HandleIdle()
 		return;
 	}
 
-	//Using StatusComponent sight Data, Set Searching Player Range(for performance)
-	//StatusComponent 에 저장된 시야 정보를 활용해서 플레이어 발견범위 제한(최적화)
+	
 	EMonsterType Type = MonsterData->MonsterType;
 	if (Type == EMonsterType::Visual || Type == EMonsterType::Hybrid)
 	{
@@ -180,7 +181,7 @@ void UMonsterFSMComponent::HandleEarChase()
 		return;
 	}
 	
-	//if moster type is Hybrid, check monster can see any player. And chasing that player
+	//if monster type is Hybrid, check monster can see any player. And chasing that player
 	//만약 몬스터가 hybrid type 이라면, 시야에 플레이어를 포착했는지 확인. 이후 시야에 포착된 플레이어 우선 추격
 	if (MonsterData->MonsterType == EMonsterType::Hybrid)
 	{
@@ -194,7 +195,7 @@ void UMonsterFSMComponent::HandleEarChase()
 	}
 	
 	//if monster arrive sound location, waiting until MaxLostTargetTime
-	//if monster heard any sound when monster chasing or waiting, monster chage arrival location.
+	//if monster heard any sound when monster chasing or waiting, monster change arrival location.
 	//목적지(소리 근원지)에 도착후, MaxLostTargetTime까지 도착지에서 대기
 	//만약 추격도중 또는 대기도중 소리를 들었다면 목적지를 새로운 소리 근원지로 변경
 	float DistToSound = FVector::Dist(OwnerMonster->GetActorLocation(),Sensing->GetLastSoundLocation());
@@ -251,7 +252,7 @@ void UMonsterFSMComponent::CheckCommonChaseTransition()
 		return;
 	}
 
-	//if player far than chase range, stop chase.
+	//if player further than chase range, stop chase.
 	// 추격 범위 이탈 체크
 	if (Distance > MonsterData->AttackRange)
 	{
@@ -262,6 +263,10 @@ void UMonsterFSMComponent::CheckCommonChaseTransition()
 void UMonsterFSMComponent::StopChasing()
 {
 	TargetActor = nullptr;
+	if (Sensing)
+	{
+		Sensing->ResetSoundFlag();
+	}
 	if (AIC)
 	{
 		AIC->StopMovement();
@@ -287,7 +292,7 @@ void UMonsterFSMComponent::HandleAttack()
 		}
 	}
 	
-	//if finish execution(ex execution animation motage), Change state Menace.
+	//if finish execution(ex execution animation montage), Change state Menace.
 	// 처형이 종료되면, Menace State로 변경
 	if (Status && !Status->GetIsExecutionActive())
 	{
@@ -310,6 +315,10 @@ void UMonsterFSMComponent::HandleMenace()
 }
 
 void UMonsterFSMComponent::HandleSpecial()
+{
+}
+
+void UMonsterFSMComponent::HandleStunned()
 {
 }
 
@@ -342,7 +351,7 @@ void UMonsterFSMComponent::Patrol()
 			return;
 		}
 		
-		//if monster arrive target point, check that point have waitng time
+		//if monster arrive target point, check that point have waiting time
 		//패트롤 목적지에 도착하면, 해당 지점에 대기시간이 있는지 확인한다.
 		FVector MyLocation = OwnerMonster->GetActorLocation();
 		FVector TargetLocation = Targets[CurrentPatrolIndex]->GetActorLocation();
@@ -366,7 +375,7 @@ void UMonsterFSMComponent::Patrol()
 			}
 		}
 
-		//when monster Can't arrive targe point, try go to other location near the target
+		//when monster Can't arrive target point, try go to other location near the target
 		//만약 목적지로 가는 길을 찾지 못할경우, 목적지 근처라도 가게 설정
 		if (AIC->GetMoveStatus() != EPathFollowingStatus::Moving)
 		{
@@ -387,6 +396,7 @@ void UMonsterFSMComponent::ExitCurrentState()
 	PatrolWaitTimer = 0.0f;
 	DetectionTimer = 0.0f;
 	LostTargetTimer = 0.0f;
+	MenaceTimer = 0.0f;
 }
 
 void UMonsterFSMComponent::EnterNewState(EMonsterState PreviousState)
@@ -401,7 +411,6 @@ void UMonsterFSMComponent::EnterNewState(EMonsterState PreviousState)
 		}
 		break;
 	case EMonsterState::Menace:
-		MenaceTimer = 0.0f;
 		if (AIC) AIC->StopMovement();
 		break;
 	case EMonsterState::Attack:
@@ -445,12 +454,19 @@ void UMonsterFSMComponent::ExecuteKill(AActor* Victim)
 	{
 		return;
 	}
+	//Check Target have ExecutionTargetInterface
+	//타켓이 ExecutionTargetInterface를 구현했는지 확인
 	IExecutionTargetInterface* Target = Cast<IExecutionTargetInterface>(Victim);
 	if (!Target)
 	{
 		return;
 	}
+	//Call Target, who is Killed
+	//타겟에게 죽었음을 알림
 	Target->OnCaughtByMonster(OwnerMonster);
+	
+	//Play Execution anymation montage logic
+	//처형 애니메이션 몽타쥬 재생 로직
 	UAnimMontage* AnimExecution = MonsterData->ExecutionMontage;
 	if (!AnimExecution)
 	{
@@ -459,11 +475,14 @@ void UMonsterFSMComponent::ExecuteKill(AActor* Victim)
 	UAnimInstance* AnimInstance = OwnerMonster->GetMesh()->GetAnimInstance();
 	if (AnimInstance)
 	{
-		OwnerMonster->PlayAnimMontage(AnimExecution);
-		
-		FOnMontageEnded MontageEndDelegate;
-		MontageEndDelegate.BindUObject(this,&UMonsterFSMComponent::OnExecutionMontageEnded);
-		AnimInstance->Montage_SetEndDelegate(MontageEndDelegate,AnimExecution);
+		float Duration = OwnerMonster->PlayAnimMontage(AnimExecution);
+		if (Duration > 0.0f)
+		{
+			Status->SetIsExecutionActive(true);
+			FOnMontageEnded MontageEndDelegate;
+			MontageEndDelegate.BindUObject(this,&UMonsterFSMComponent::OnExecutionMontageEnded);
+			AnimInstance->Montage_SetEndDelegate(MontageEndDelegate,AnimExecution);
+		}
 	}
 	
 	

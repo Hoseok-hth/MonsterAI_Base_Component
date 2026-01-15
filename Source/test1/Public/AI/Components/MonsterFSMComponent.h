@@ -37,6 +37,7 @@ protected:
 	virtual void HandleMenace();
 	
 	virtual void HandleSpecial();
+	virtual void HandleStunned();
 	
 	virtual void ExitCurrentState();
 	virtual void EnterNewState(EMonsterState PreviousState);

@@ -23,19 +23,12 @@ public:
 	bool GetIsExecutionActive() const { return bIsExecutionActive; }
 	void SetIsExecutionActive(bool b){bIsExecutionActive = b;}
 private:
-	//default = visual sense
-	//기본값은 시야기반 감지
-	UPROPERTY(EditAnywhere, Category = "Monster Status")
-	EMonsterType MonsterType = EMonsterType::Visual;
-	
 	//default = static(don't patrol)
 	//idle 기본 행동은 patrol없이 가만 멈춰있음
 	UPROPERTY(EditAnywhere, Category = "Monster Status")
 	EIdleBehavior IdleBehavior =EIdleBehavior::Static;
 	
 	bool bIsExecutionActive = false;
-	
-	
 	
 	//patrol location points(actor)
 	UPROPERTY(EditAnywhere, Category = "Monster Status | Patrol")
