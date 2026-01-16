@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "AI/Type/EMonsterState.h"
 #include "GameFramework/Character.h"
 #include "BaseMonster.generated.h"
 
@@ -31,8 +32,11 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Condition")
 	bool CanActivateSpecial(); 
 	virtual bool CanActivateSpecial_Implementation();
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable, Category = "Event")
+	bool OnPatrolWaitStart(); 
+	virtual bool OnPatrolWaitStart_Implementation();
 	
-	void OnLightHit();
+	void OnLightHit() const;
 	
 	UFUNCTION(BlueprintCallable, Category = "State", meta=(DisplayName="Set Monster State"))
 	void SetState(EMonsterState NewState);
@@ -42,6 +46,18 @@ public:
 	
 	UFUNCTION(CallInEditor, Category = "Data")
 	void RefreshMonster();
+	
+	UFUNCTION(BlueprintCallable, Category = "Status", meta=(DisplayName="Get Monster Base Speed"))
+	float GetBaseSpeed();
+	
+	UFUNCTION(BlueprintCallable, Category = "Status", meta=(DisplayName="Set Monster Base Speed"))
+	void SetBaseSpeed(float NewSpeed);
+	
+	UFUNCTION(BlueprintCallable, Category = "Status", meta=(DisplayName="Get Monster Chase Speed"))
+	float GetChaseSpeed();
+	
+	UFUNCTION(BlueprintCallable, Category = "Status", meta=(DisplayName="Set Monster Chase Speed"))
+	void SetChaseSpeed(float NewSpeed);
 	
 #if WITH_EDITOR
 	

@@ -42,7 +42,12 @@ bool ABaseMonster::CanActivateSpecial_Implementation()
 	return false;
 }
 
-void ABaseMonster::OnLightHit()
+bool ABaseMonster::OnPatrolWaitStart_Implementation()
+{
+	return false;
+}
+
+void ABaseMonster::OnLightHit() const
 {
 	
 	FGameplayTag LightTag = FBackRoomTags::Get().Weakness_Light;
@@ -77,6 +82,44 @@ void ABaseMonster::RefreshMonster()
 	OnConstruction(GetActorTransform());
 	
 	UE_LOG(LogTemp, Log, TEXT("Monster Refreshed!"));
+}
+
+float ABaseMonster::GetBaseSpeed()
+{
+	if (StatusComponent)
+	{
+		return StatusComponent->GetBaseSpeed();
+	}else
+	{
+		return 0.f;
+	}
+}
+
+void ABaseMonster::SetBaseSpeed(float NewSpeed)
+{
+	if (StatusComponent)
+	{
+		StatusComponent->SetBaseSpeed(NewSpeed);
+	}
+}
+
+float ABaseMonster::GetChaseSpeed()
+{
+	if (StatusComponent)
+	{
+		return StatusComponent->GetChaseSpeed();
+	}else
+	{
+		return 0.f;
+	}
+}
+
+void ABaseMonster::SetChaseSpeed(float NewSpeed)
+{
+	if (StatusComponent)
+	{
+		StatusComponent->SetChaseSpeed(NewSpeed);
+	}
 }
 #if WITH_EDITOR
 void ABaseMonster::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)

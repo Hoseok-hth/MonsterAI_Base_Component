@@ -413,7 +413,11 @@ void UMonsterFSMComponent::Patrol()
 			{
 				Status->SetIsWaiting(true);
 				PatrolTargetWaitTime = Targets[CurrentPatrolIndex]->WaitTime;
-				AIC->StopMovement();
+				
+				if (!OwnerMonster->OnPatrolWaitStart())
+				{
+					AIC->StopMovement();
+				}
 				UE_LOG(LogTemp, Warning, TEXT("지점 도달: %f초간 대기 시작"), PatrolTargetWaitTime);
 			}
 			//if there is no waiting time, monster go to next patrol point
