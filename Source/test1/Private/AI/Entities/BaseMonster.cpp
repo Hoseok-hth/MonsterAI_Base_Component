@@ -1,4 +1,6 @@
 ﻿#include "AI/Entities//BaseMonster.h"
+#include "Global/BackRoomTags.h"
+#include "GameplayTagContainer.h"
 #include "AI/Components/MonsterStatusComponent.h"
 #include "AI/Components/MonsterFSMComponent.h"
 #include "AI/Components/MonsterSensingComponent.h"
@@ -6,7 +8,7 @@
 #include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "Interfaces/ExecutionTargetInterface.h"
+
 
 ABaseMonster::ABaseMonster(const FObjectInitializer& ObjectInitializer)
 {
@@ -24,6 +26,95 @@ ABaseMonster::ABaseMonster(const FObjectInitializer& ObjectInitializer)
 	if (GetCapsuleComponent())
 	{
 		GetCapsuleComponent()->SetHiddenInGame(false);
+	}
+}
+
+void ABaseMonster::FinishSpecialAbility_Implementation()
+{
+	if (FSMComponent)
+	{
+		FSMComponent->FinishSpecial();
+	}
+}
+
+bool ABaseMonster::CanActivateSpecial_Implementation()
+{
+	return false;
+}
+
+void ABaseMonster::OnLightHit()
+{
+	
+	FGameplayTag LightTag = FBackRoomTags::Get().Weakness_Light;
+	if (MonsterData && MonsterData->WeaknessTags.HasTag(LightTag))
+	{
+		if (FSMComponent)
+		{
+			FSMComponent->ActivateStunState();
+		}
+	}
+}
+
+void ABaseMonster::SetState(EMonsterState NewState)
+{
+	if (FSMComponent)
+	{
+		FSMComponent->SetState(NewState);
+	}
+}
+
+EMonsterState ABaseMonster::GetState() const
+{
+	if (FSMComponent)
+	{
+		return FSMComponent->GetCurrentState();
+	}
+	return EMonsterState::Idle;
+}
+
+void ABaseMonster::RefreshMonster()
+{
+	OnConstruction(GetActorTransform());
+	
+	UE_LOG(LogTemp, Log, TEXT("Monster Refreshed!"));
+}
+#if WITH_EDITOR
+void ABaseMonster::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	if (PropertyChangedEvent.Property && PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(ABaseMonster, MonsterData))
+	{
+		
+		OnConstruction(GetActorTransform());
+	}
+}
+#endif
+
+void ABaseMonster::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	if (MonsterData)
+	{
+		
+		if (MonsterData->MonsterMesh)
+		{
+			GetMesh()->SetSkeletalMesh(MonsterData->MonsterMesh);
+		}
+        
+		
+		if (MonsterData->AnimBPClass)
+		{
+			GetMesh()->SetAnimInstanceClass(MonsterData->AnimBPClass);
+		}
+
+		
+		GetMesh()->SetRelativeScale3D(MonsterData->MeshScale);
+        
+		
+		if (GetCharacterMovement())
+		{
+			GetCharacterMovement()->MaxWalkSpeed = MonsterData->BaseSpeed;
+		}
 	}
 }
 

@@ -23,6 +23,8 @@ public:
 	EMonsterState GetCurrentState()const{return CurrentState;};
 	UPROPERTY()
 	const UMonsterDataAsset* MonsterData;
+	void ActivateStunState();
+	void FinishSpecial();
 protected:
 	// 행동 패턴 핸들링 함수는 전부 가상화 해서 몬스터 타입에 맞게 상속받아서 새로 작성해야함
 	virtual void BeginPlay() override;
@@ -39,6 +41,8 @@ protected:
 	
 	virtual void HandleSpecial();
 	virtual void HandleStunned();
+	
+	virtual void HandleFinishSpecial();
 	
 	virtual void ExitCurrentState();
 	virtual void EnterNewState(EMonsterState PreviousState);
@@ -77,20 +81,17 @@ private:
 	void ExecuteKill(AActor* Victim);
 	
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayExecutionMontage(UAnimMontage* MontageToPlay);
+	void MulticastPlayMontage(UAnimMontage* MontageToPlay);
 	
 	UFUNCTION()
-	void OnExecutionMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	float DetectionTimer = 0.0f;
 	float DetectionInterval = 0.2f;
-	
 	float MenaceTimer = 0.0f;
-	
 	float PatrolWaitTimer = 0.0f;
-	bool bIsWaiting = false;
 	float PatrolTargetWaitTime = 0.0f;
-	
 	float LostTargetTimer = 0.0f;
+	float StunTimer = 0.0f;
 	
 	
 	

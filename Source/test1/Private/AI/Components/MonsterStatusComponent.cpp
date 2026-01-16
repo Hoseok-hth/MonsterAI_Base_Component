@@ -102,3 +102,28 @@ float UMonsterStatusComponent::GetChaseSoundVolume() const
 {
 	return MonsterData->ChaseSoundVolume;
 }
+
+bool UMonsterStatusComponent::GetIsSpecialActive() const
+{
+	return bIsSpecialActivate;
+}
+
+void UMonsterStatusComponent::SetIsSpecialActive(bool b)
+{
+	bIsSpecialActivate = b;
+}
+
+bool UMonsterStatusComponent::GetIsWaiting() const
+{
+	return bIsWaiting;
+}
+
+void UMonsterStatusComponent::SetIsWaiting(bool b)
+{
+	bIsWaiting = b;
+}
+
+float UMonsterStatusComponent::GetStunTime() const
+{
+	return MonsterData->StunnedTime;
+}

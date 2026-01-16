@@ -18,6 +18,9 @@ public class test1 : ModuleRules
 			
 			//Navigation
 			"NavigationSystem",
+			
+			//Tags
+			"GameplayTags",
 		});
 
 		PublicIncludePaths.AddRange(new string[] 

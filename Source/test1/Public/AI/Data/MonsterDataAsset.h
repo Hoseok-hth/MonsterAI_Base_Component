@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AI/Type/EMonsterState.h"
 #include "Engine/DataAsset.h"
+#include "GameplayTagContainer.h"
 #include "MonsterDataAsset.generated.h"
 
 /**
@@ -16,11 +17,22 @@ class TEST1_API UMonsterDataAsset : public UPrimaryDataAsset
 	GENERATED_BODY()
 	
 public:
+	UPROPERTY(EditAnywhere, Category = "Visual")
+	USkeletalMesh* MonsterMesh;
+
+	UPROPERTY(EditAnywhere, Category = "Visual")
+	TSubclassOf<UAnimInstance> AnimBPClass; 
+
+	UPROPERTY(EditAnywhere, Category = "Visual")
+	FVector MeshScale = FVector(1.0f); 
+	
+	
 	//default = visual sense
 	//기본값은 시야기반 감지
-	UPROPERTY(EditAnywhere, Category = "Sense Type")
+	UPROPERTY(EditAnywhere, Category = "Type")
 	EMonsterType MonsterType = EMonsterType::Visual;
-	
+	UPROPERTY(EditAnywhere, Category = "Type")
+	FGameplayTagContainer WeaknessTags;
 	UPROPERTY(EditAnywhere, Category = "Chase")
 	float ArrivalRadius = 100.f;
 	
@@ -77,4 +89,7 @@ public:
 	float IdleSoundVolume = 1.0f;
 	UPROPERTY(EditAnywhere, Category = "Volume")
 	float ChaseSoundVolume = 1.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Duration")
+	float StunnedTime = 0.f;
 };

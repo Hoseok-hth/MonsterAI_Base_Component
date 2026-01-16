@@ -2,7 +2,7 @@
 
 #include "AI/Components/MonsterSensingComponent.h"
 #include "AI/Entities/BaseMonster.h"
-#include "Global/Define.h" // FProjectTags 사용을 위해 포함
+#include "Global/BackRoomTags.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -11,7 +11,7 @@ ATestDummyPlayer::ATestDummyPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	Tags.Add(FProjectTags::Player);
+	Tags.Add(FBackRoomTags::PlayerName);
 
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
     

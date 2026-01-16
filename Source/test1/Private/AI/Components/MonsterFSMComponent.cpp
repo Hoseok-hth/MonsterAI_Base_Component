@@ -1,6 +1,7 @@
 ﻿#include "AI/Components/MonsterFSMComponent.h"
 #include "GameFramework/Actor.h"
 #include "AIController.h"
+#include "AudioMixerBlueprintLibrary.h"
 #include "GameFramework/Actor.h"
 #include "AI/Components/MonsterSensingComponent.h"
 #include "AI/Components/MonsterStatusComponent.h"
@@ -20,6 +21,15 @@ class AAIController;
 UMonsterFSMComponent::UMonsterFSMComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+}
+
+void UMonsterFSMComponent::ActivateStunState()
+{
+	if (CurrentState == EMonsterState::Idle || CurrentState == EMonsterState::EarChase || CurrentState == EMonsterState::EyeChase)
+	{
+		StopChasing();
+		SetState(EMonsterState::Stunned);
+	}
 }
 
 void UMonsterFSMComponent::BeginPlay()
@@ -76,6 +86,11 @@ void UMonsterFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 void UMonsterFSMComponent::SetState(EMonsterState NewState)
 {
 	if (CurrentState == NewState) return;
+	if (Status && Status->GetIsExecutionActive()) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("처형 모션 중에는 상태를 바꿀 수 없습니다!"));
+		return; 
+	}
 	ExitCurrentState();
 	EMonsterState PreviousState = CurrentState;
 	CurrentState = NewState;
@@ -95,6 +110,12 @@ void UMonsterFSMComponent::HandleIdle()
 	{
 		return;
 	}
+	if (OwnerMonster->CanActivateSpecial())
+	{
+		SetState(EMonsterState::Special);
+		return;
+	}
+	
 	//if DetectionTime less then Interval -> don't find Player
 	//0.2초마다 플레이어 탐색, 최적화를 위해 있는 부분
 	DetectionTimer += GetWorld()->GetDeltaSeconds();
@@ -152,6 +173,12 @@ void UMonsterFSMComponent::HandleIdle()
 
 void UMonsterFSMComponent::HandleEyeChase()
 {
+	if (OwnerMonster && OwnerMonster->CanActivateSpecial())
+	{
+		StopChasing();
+		SetState(EMonsterState::Special);
+		return;
+	}
 	//if monster still see player -> keep chasing
 	//몬스터가 타겟을 볼수 있다면 계속 추적
 	if (Sensing->CanSeeTarget(TargetActor))
@@ -176,12 +203,17 @@ void UMonsterFSMComponent::HandleEyeChase()
 
 void UMonsterFSMComponent::HandleEarChase()
 {
+	if (OwnerMonster && OwnerMonster->CanActivateSpecial())
+	{
+		StopChasing();
+		SetState(EMonsterState::Special);
+		return;
+	}
 	if (!Sensing || !AIC)
 	{
 		StopChasing();
 		return;
 	}
-	
 	//if monster type is Hybrid, check monster can see any player. And chasing that player
 	//만약 몬스터가 hybrid type 이라면, 시야에 플레이어를 포착했는지 확인. 이후 시야에 포착된 플레이어 우선 추격
 	if (Status->GetMonsterType() == EMonsterType::Hybrid)
@@ -318,10 +350,27 @@ void UMonsterFSMComponent::HandleMenace()
 
 void UMonsterFSMComponent::HandleSpecial()
 {
+	
 }
 
 void UMonsterFSMComponent::HandleStunned()
 {
+	StunTimer += GetWorld()->GetDeltaSeconds();
+	if (StunTimer >= Status->GetStunTime())
+	{
+		StunTimer = 0.0f;
+		SetState(EMonsterState::Idle);
+	}
+}
+
+void UMonsterFSMComponent::HandleFinishSpecial()
+{
+	SetState(EMonsterState::Idle);
+}
+
+void UMonsterFSMComponent::FinishSpecial()
+{
+	HandleFinishSpecial();
 }
 
 void UMonsterFSMComponent::Patrol()
@@ -332,12 +381,12 @@ void UMonsterFSMComponent::Patrol()
 	}
 	//monster stay waiting point, until PatrolTargetWaitTime
 	//대기 지점에서는 몬스터는 PatrolTargetWaitTime만큼 대기한다.
-	if (bIsWaiting)
+	if (Status->GetIsWaiting())
 	{
 		PatrolWaitTimer += GetWorld()->GetDeltaSeconds();
 		if (PatrolWaitTimer >= PatrolTargetWaitTime)
 		{
-			bIsWaiting = false;
+			Status->SetIsWaiting(false);
 			PatrolWaitTimer = 0.0f;
 			const TArray<AMonsterPatrolPoint*>& Targets = Status->GetPatrolTargets();
 			CurrentPatrolIndex = (CurrentPatrolIndex + 1) % Targets.Num();
@@ -362,7 +411,7 @@ void UMonsterFSMComponent::Patrol()
 		{
 			if (Targets[CurrentPatrolIndex]->WaitTime > 0.0f)
 			{
-				bIsWaiting = true;
+				Status->SetIsWaiting(true);
 				PatrolTargetWaitTime = Targets[CurrentPatrolIndex]->WaitTime;
 				AIC->StopMovement();
 				UE_LOG(LogTemp, Warning, TEXT("지점 도달: %f초간 대기 시작"), PatrolTargetWaitTime);
@@ -394,11 +443,12 @@ void UMonsterFSMComponent::Patrol()
 
 void UMonsterFSMComponent::ExitCurrentState()
 {
-	bIsWaiting = false;
+	Status->SetIsWaiting(false);
 	PatrolWaitTimer = 0.0f;
 	DetectionTimer = 0.0f;
 	LostTargetTimer = 0.0f;
 	MenaceTimer = 0.0f;
+	StunTimer = 0.0f;
 }
 
 void UMonsterFSMComponent::EnterNewState(EMonsterState PreviousState)
@@ -420,8 +470,14 @@ void UMonsterFSMComponent::EnterNewState(EMonsterState PreviousState)
 		if (AIC) AIC->StopMovement();
 		break;
 	case EMonsterState::Special:
+		if (OwnerMonster) OwnerMonster->OnSpecialAbilityStart();
 		break;
 	case EMonsterState::Stunned:
+		if (AIC) AIC->StopMovement();
+		if (MonsterData && MonsterData->StunnedMontage)
+		{
+			MulticastPlayMontage(MonsterData->StunnedMontage);
+		}
 		break;
 	default:
 		break;
@@ -521,7 +577,7 @@ void UMonsterFSMComponent::ExecuteKill(AActor* Victim)
 		Status->SetIsExecutionActive(true);
 	}
 	
-	MulticastPlayExecutionMontage(AnimExecution);
+	MulticastPlayMontage(AnimExecution);
 	
 	
 	
@@ -571,7 +627,7 @@ void UMonsterFSMComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME(UMonsterFSMComponent, CurrentState);
 }
 
-void UMonsterFSMComponent::MulticastPlayExecutionMontage_Implementation(UAnimMontage* MontageToPlay)
+void UMonsterFSMComponent::MulticastPlayMontage_Implementation(UAnimMontage* MontageToPlay)
 {
 	if (!OwnerMonster || !MontageToPlay) return;
 	UAnimInstance* AnimInstance = OwnerMonster->GetMesh()->GetAnimInstance();
@@ -581,13 +637,13 @@ void UMonsterFSMComponent::MulticastPlayExecutionMontage_Implementation(UAnimMon
 		if (Duration > 0.0f && OwnerMonster->HasAuthority())
 		{
 			FOnMontageEnded MontageEndDelegate;
-			MontageEndDelegate.BindUObject(this,&UMonsterFSMComponent::OnExecutionMontageEnded);
+			MontageEndDelegate.BindUObject(this,&UMonsterFSMComponent::OnMontageEnded);
 			AnimInstance->Montage_SetEndDelegate(MontageEndDelegate,MontageToPlay);
 		}
 	}
 }
 
-void UMonsterFSMComponent::OnExecutionMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+void UMonsterFSMComponent::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (MonsterData && Montage == MonsterData->ExecutionMontage)
 	{

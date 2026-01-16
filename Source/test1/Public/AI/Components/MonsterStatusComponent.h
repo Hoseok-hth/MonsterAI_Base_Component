@@ -43,6 +43,12 @@ public:
 	float GetMaxLostTargetTime() const;
 	float GetIdleSoundVolume() const;
 	float GetChaseSoundVolume() const;
+	bool GetIsSpecialActive() const;
+	void SetIsSpecialActive(bool b);
+
+	bool GetIsWaiting() const;
+	void SetIsWaiting(bool b);
+	float GetStunTime() const;
 	
 	
 private:
@@ -66,8 +72,12 @@ private:
 	float BaseSpeed = 0.f;
 	UPROPERTY()
 	float ChaseSpeed = 0.f;
-	
-	
+	UPROPERTY()
+	bool bIsSpecialActivate = false;
+	UPROPERTY()
+	bool bIsStunned = false;
+	UPROPERTY()
+	bool bIsWaiting = false;
 	
 	
 };

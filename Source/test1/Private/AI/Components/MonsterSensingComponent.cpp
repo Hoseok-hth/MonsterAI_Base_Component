@@ -2,7 +2,7 @@
 #include "AI/Entities/BaseMonster.h"
 #include "AI/Components/MonsterStatusComponent.h"
 #include "GameFramework/Character.h"
-#include "Global/Define.h"
+#include "Global/BackRoomTags.h"
 #include "AI/Data/MonsterDataAsset.h"
 #include "Interfaces/ExecutionTargetInterface.h"
 #include "Kismet/GameplayStatics.h"
@@ -76,7 +76,7 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
 			AActor* HitActor = HitResult.GetActor();
 			if (HitActor)
 			{
-				if (HitActor == Target || HitActor->ActorHasTag(FProjectTags::Player))
+				if (HitActor == Target || HitActor->ActorHasTag(FBackRoomTags::PlayerName))
 				{
 					DrawDebugLine(GetWorld(), EyeLocation, TargetPoint, FColor::Green, false, 0.1f);
 					return true;
@@ -120,54 +120,16 @@ void UMonsterSensingComponent::ReportSound(FVector SoundLocation, float VolumeMu
 
 AActor* UMonsterSensingComponent::FindNearestPlayer()
 {
-	//더미 테스트용 임시 코드, 최적화 덜 됨
+	
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
 
 	AActor* NearestPlayer = nullptr;
-	float MinDistanceSq = TNumericLimits<float>::Max();
-	FVector MyLocation = GetOwner()->GetActorLocation();
-
-	
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsWithTag(World, FProjectTags::Player, FoundActors);
-
-	for (AActor* Actor : FoundActors)
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("Found Actor"));
-		if (!Actor) continue;
-		IExecutionTargetInterface* Target = Cast<IExecutionTargetInterface>(Actor);
-		if (!Target || Target->IsDead()) continue;
-		
-		float DistSq = FVector::DistSquared(MyLocation, Actor->GetActorLocation());
-
-		
-		if (DistSq >= MinDistanceSq)
-		{
-			continue;
-		}
-
-		
-		if (CanSeeTarget(Actor))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Can See Actor"));
-			MinDistanceSq = DistSq;
-			NearestPlayer = Actor;
-		}
-	}
-
-	return NearestPlayer;
-	
-	
-	//실제 적용할 코드, 더미 테스트를 위해 잠시 주석처리
-	/*UWorld* World = GetWorld();
-	if (!World) return nullptr;
-
-	AActor* NearestPlayer = nullptr;
 	
 	float MinDistanceSq = TNumericLimits<float>::Max();
 	FVector MyLocation = GetOwner()->GetActorLocation();
 
+	TArray<AActor*> Candidates;
 	
 	for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
@@ -175,33 +137,54 @@ AActor* UMonsterSensingComponent::FindNearestPlayer()
 		
 		if (PC && PC->GetPawn())
 		{
-			AActor* TargetPawn = PC->GetPawn();
-
-			
-			if (!TargetPawn->ActorHasTag(FProjectTags::Player))
+			if (AActor* TargetPawn = PC->GetPawn(); TargetPawn->ActorHasTag(FBackRoomTags::PlayerName))
 			{
-				continue;
+				Candidates.Add(TargetPawn);
 			}
+			
+		}
+	}
+#if WITH_EDITOR
+	TArray<AActor*> DummyActors;
+	UGameplayStatics::GetAllActorsWithTag(World, FBackRoomTags::PlayerName, DummyActors);
+    
+	for (AActor* Dummy : DummyActors)
+	{
+		Candidates.AddUnique(Dummy);
+	}
+	
+	
+#endif
+	
+	for (AActor* Candidate : Candidates)
+	{
+		IExecutionTargetInterface* TargetInterface = Cast<IExecutionTargetInterface>(Candidate);
+		if (!TargetInterface) continue;
+		if (TargetInterface->IsDead()) 
+		{
+			continue;
+		}
+		float DistSq = FVector::DistSquared(MyLocation, Candidate->GetActorLocation());
+		if (DistSq >= MinDistanceSq)
+		{
+			continue;
+		}
 
 			
-			float DistSq = FVector::DistSquared(MyLocation, TargetPawn->GetActorLocation());
-
-			
-			if (DistSq >= MinDistanceSq)
-			{
-				continue;
-			}
-
-			
-			if (CanSeeTarget(TargetPawn))
-			{
-				MinDistanceSq = DistSq;
-				NearestPlayer = TargetPawn;
-			}
+		if (CanSeeTarget(Candidate))
+		{
+			MinDistanceSq = DistSq;
+			NearestPlayer = Candidate;
 		}
 	}
 
-	return NearestPlayer;*/
+			
+
+			
+			
+	
+
+	return NearestPlayer;
 }
 bool UMonsterSensingComponent::IsPlayersGrouping(float Radius, int32 MinCount)
 {
