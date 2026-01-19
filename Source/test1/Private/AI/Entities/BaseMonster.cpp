@@ -8,6 +8,9 @@
 #include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "DrawDebugHelpers.h"
+#include "UnrealEdGlobals.h"
+#include "Editor/UnrealEdEngine.h"
 
 
 ABaseMonster::ABaseMonster(const FObjectInitializer& ObjectInitializer)
@@ -29,6 +32,66 @@ ABaseMonster::ABaseMonster(const FObjectInitializer& ObjectInitializer)
 	}
 }
 
+void ABaseMonster::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+#if WITH_EDITOR
+	if (MonsterData && StatusComponent)
+	{
+		FlushPersistentDebugLines(GetWorld());
+
+		FVector Center = GetActorLocation();
+		Center.Z += MonsterData->EyeHeight;
+
+		float View_Range = MonsterData->BaseDetectionRange;
+		float View_Angle = MonsterData->ViewAngle;
+		float Hearing_Range = MonsterData->BaseHearingRange;
+
+		FVector Forward = GetActorForwardVector();
+		FVector Right = GetActorRightVector();
+		FVector Up = GetActorUpVector();
+
+		// [수정됨] 원을 바닥에 눕히기 위해 Matrix의 첫 번째 인자(X축/Normal)를 Up 벡터로 변경
+		// 순서: (Normal, YAxis, ZAxis, Origin)
+		// Up 벡터가 Normal이 되면 원은 수평면(Forward-Right 평면)에 그려집니다.
+		DrawDebugCircle(
+			GetWorld(), 
+			FMatrix(Up, Right, Forward, Center), 
+			View_Range, 
+			32, 
+			FColor::Green, 
+			true, 
+			-1.f, 
+			0, 
+			2.0f, 
+			false 
+		);
+		
+		DrawDebugCircle(
+			GetWorld(), 
+			FMatrix(Up, Right, Forward, Center), 
+			Hearing_Range, 
+			32, 
+			FColor::Red, 
+			true, 
+			-1.f, 
+			0, 
+			2.0f, 
+			false 
+		);
+
+		// 시야각(부채꼴) 선 그리기 (이 부분은 기존과 동일)
+		FVector LeftDir = Forward.RotateAngleAxis(-View_Angle * 0.5f, FVector::UpVector);
+		FVector RightDir = Forward.RotateAngleAxis(View_Angle * 0.5f, FVector::UpVector);
+
+		DrawDebugLine(GetWorld(), Center, Center + LeftDir * View_Range, FColor::Green, true, -1.f, 0, 2.0f);
+		DrawDebugLine(GetWorld(), Center, Center + RightDir * View_Range, FColor::Green, true, -1.f, 0, 2.0f);
+	}
+#endif
+	
+}
+
 void ABaseMonster::FinishSpecialAbility_Implementation()
 {
 	if (FSMComponent)
@@ -37,10 +100,7 @@ void ABaseMonster::FinishSpecialAbility_Implementation()
 	}
 }
 
-bool ABaseMonster::CanActivateSpecial_Implementation()
-{
-	return false;
-}
+
 
 bool ABaseMonster::OnPatrolWaitStart_Implementation()
 {
@@ -129,6 +189,11 @@ void ABaseMonster::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 	{
 		
 		OnConstruction(GetActorTransform());
+		
+		if (GUnrealEd)
+		{
+			GUnrealEd->RedrawLevelEditingViewports();
+		}
 	}
 }
 #endif
@@ -159,6 +224,60 @@ void ABaseMonster::OnConstruction(const FTransform& Transform)
 			GetCharacterMovement()->MaxWalkSpeed = MonsterData->BaseSpeed;
 		}
 	}
+	
+#if WITH_EDITOR
+	if (MonsterData && StatusComponent)
+	{
+		FlushPersistentDebugLines(GetWorld());
+
+		FVector Center = GetActorLocation();
+		Center.Z += MonsterData->EyeHeight;
+
+		float View_Range = MonsterData->BaseDetectionRange;
+		float View_Angle = MonsterData->ViewAngle;
+		float Hearing_Range = MonsterData->BaseHearingRange;
+
+		FVector Forward = GetActorForwardVector();
+		FVector Right = GetActorRightVector();
+		FVector Up = GetActorUpVector();
+
+		// [수정됨] 원을 바닥에 눕히기 위해 Matrix의 첫 번째 인자(X축/Normal)를 Up 벡터로 변경
+		// 순서: (Normal, YAxis, ZAxis, Origin)
+		// Up 벡터가 Normal이 되면 원은 수평면(Forward-Right 평면)에 그려집니다.
+		DrawDebugCircle(
+			GetWorld(), 
+			FMatrix(Up, Right, Forward, Center), 
+			View_Range, 
+			32, 
+			FColor::Green, 
+			true, 
+			-1.f, 
+			0, 
+			2.0f, 
+			false 
+		);
+		
+		DrawDebugCircle(
+			GetWorld(), 
+			FMatrix(Up, Right, Forward, Center), 
+			Hearing_Range, 
+			32, 
+			FColor::Red, 
+			true, 
+			-1.f, 
+			0, 
+			2.0f, 
+			false 
+		);
+
+		// 시야각(부채꼴) 선 그리기 (이 부분은 기존과 동일)
+		FVector LeftDir = Forward.RotateAngleAxis(-View_Angle * 0.5f, FVector::UpVector);
+		FVector RightDir = Forward.RotateAngleAxis(View_Angle * 0.5f, FVector::UpVector);
+
+		DrawDebugLine(GetWorld(), Center, Center + LeftDir * View_Range, FColor::Green, true, -1.f, 0, 2.0f);
+		DrawDebugLine(GetWorld(), Center, Center + RightDir * View_Range, FColor::Green, true, -1.f, 0, 2.0f);
+	}
+#endif
 }
 
 void ABaseMonster::BeginPlay()

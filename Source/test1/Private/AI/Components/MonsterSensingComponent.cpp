@@ -31,7 +31,7 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
 {
 	if (!Target ||!Status)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No Target or Status Comp"));
+		//UE_LOG(LogTemp, Warning, TEXT("No Target or Status Comp"));
 		return false;
 	}
 	
@@ -45,7 +45,7 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
     
 	if (Distance > MaxRange)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Actor Distance Too Far"));
+		//UE_LOG(LogTemp, Warning, TEXT("Actor Distance Too Far"));
 
 		return false;
 	}
@@ -57,7 +57,7 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
     
 	if (Angle > fovAngle * 0.5f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Out of Angle"));
+		//UE_LOG(LogTemp, Warning, TEXT("Out of Angle"));
 		return false;
 	}
 	TArray<FVector> CheckPoints;
@@ -78,21 +78,26 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
 			{
 				if (HitActor == Target || HitActor->ActorHasTag(FBackRoomTags::PlayerName))
 				{
+#if WITH_EDITOR
 					DrawDebugLine(GetWorld(), EyeLocation, TargetPoint, FColor::Green, false, 0.1f);
+#endif
+					
 					return true;
 				}else
 				{
+#if WITH_EDITOR
 					DrawDebugLine(GetWorld(), EyeLocation, HitResult.ImpactPoint, FColor::Red, false, 0.1f);
-					UE_LOG(LogTemp, Warning, TEXT("Blocked by: %s"), *HitActor->GetName());
+#endif
+					//UE_LOG(LogTemp, Warning, TEXT("Blocked by: %s"), *HitActor->GetName());
 				}
 			}else
 			{
 				DrawDebugLine(GetWorld(), EyeLocation, TargetPoint, FColor::Red, false, 0.1f);
-				UE_LOG(LogTemp, Warning, TEXT("Hit Nothing (Passed through)"));
+				//UE_LOG(LogTemp, Warning, TEXT("Hit Nothing (Passed through)"));
 			}
 		}  
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Actor behind something"));
+	//UE_LOG(LogTemp, Warning, TEXT("Actor behind something"));
 	return false;
 }
 

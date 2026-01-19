@@ -110,11 +110,7 @@ void UMonsterFSMComponent::HandleIdle()
 	{
 		return;
 	}
-	if (OwnerMonster->CanActivateSpecial())
-	{
-		SetState(EMonsterState::Special);
-		return;
-	}
+	
 	
 	//if DetectionTime less then Interval -> don't find Player
 	//0.2초마다 플레이어 탐색, 최적화를 위해 있는 부분
@@ -173,12 +169,7 @@ void UMonsterFSMComponent::HandleIdle()
 
 void UMonsterFSMComponent::HandleEyeChase()
 {
-	if (OwnerMonster && OwnerMonster->CanActivateSpecial())
-	{
-		StopChasing();
-		SetState(EMonsterState::Special);
-		return;
-	}
+	
 	//if monster still see player -> keep chasing
 	//몬스터가 타겟을 볼수 있다면 계속 추적
 	if (Sensing->CanSeeTarget(TargetActor))
@@ -203,12 +194,7 @@ void UMonsterFSMComponent::HandleEyeChase()
 
 void UMonsterFSMComponent::HandleEarChase()
 {
-	if (OwnerMonster && OwnerMonster->CanActivateSpecial())
-	{
-		StopChasing();
-		SetState(EMonsterState::Special);
-		return;
-	}
+	
 	if (!Sensing || !AIC)
 	{
 		StopChasing();

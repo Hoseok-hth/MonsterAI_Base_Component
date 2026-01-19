@@ -22,6 +22,13 @@ public class test1 : ModuleRules
 			//Tags
 			"GameplayTags",
 		});
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[] { 
+				//unreal editor util
+				"UnrealEd" 
+			});
+		}
 
 		PublicIncludePaths.AddRange(new string[] 
 		{ 

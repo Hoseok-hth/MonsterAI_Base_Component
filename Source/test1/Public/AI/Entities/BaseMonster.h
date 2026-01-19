@@ -17,6 +17,7 @@ class TEST1_API ABaseMonster : public ACharacter
 
 public:
 	ABaseMonster(const FObjectInitializer& ObjectInitializer);
+	virtual void Tick(float DeltaSeconds) override;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	const UMonsterDataAsset* MonsterData;
@@ -29,9 +30,7 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Condition")
 	void FinishSpecialAbility();
 	virtual void FinishSpecialAbility_Implementation();
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Condition")
-	bool CanActivateSpecial(); 
-	virtual bool CanActivateSpecial_Implementation();
+	
 	UFUNCTION(BlueprintNativeEvent,BlueprintCallable, Category = "Event")
 	bool OnPatrolWaitStart(); 
 	virtual bool OnPatrolWaitStart_Implementation();
