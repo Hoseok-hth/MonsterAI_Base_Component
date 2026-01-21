@@ -48,8 +48,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Angle")
 	float ViewAngle = 90.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Range")
-	float BaseHearingRange = 1500.f;
+	UPROPERTY(EditAnywhere, Category = "Sense", meta=(ClampMin="0.0", ClampMax="1.0"))
+	float HearingThreshold = 0.5f;
 	
 	UPROPERTY(EditAnywhere, Category = "Range")
 	float AttackRange = 150.f;

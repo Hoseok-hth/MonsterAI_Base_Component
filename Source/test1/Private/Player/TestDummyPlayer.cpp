@@ -77,7 +77,7 @@ void ATestDummyPlayer::EmitFootstepNoise()
 				// [핵심] 몬스터의 귀에 직접 소리 정보를 꽂아줍니다.
 				// 몬스터 코드는 이 함수를 통해 bHeardSound = true가 되고
 				// FSM의 HandleIdle -> EarChase 로직이 작동하게 됩니다.
-				Sensing->ReportSound(MyLocation, NoiseLoudness);
+				Sensing->ReportSound(MyLocation, NoiseLoudness,1000,this);
 			}
 		}
 	}

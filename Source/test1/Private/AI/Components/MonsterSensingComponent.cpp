@@ -3,7 +3,6 @@
 #include "AI/Components/MonsterStatusComponent.h"
 #include "GameFramework/Character.h"
 #include "Global/BackRoomTags.h"
-#include "AI/Data/MonsterDataAsset.h"
 #include "Interfaces/ExecutionTargetInterface.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -101,26 +100,28 @@ bool UMonsterSensingComponent::CanSeeTarget(AActor* Target)
 	return false;
 }
 
-
-void UMonsterSensingComponent::ReportSound(FVector SoundLocation, float VolumeMultiplier)
+void UMonsterSensingComponent::ReportSound(FVector SoundLocation, float Loudness, float MaxRange,
+	AActor* Instigator)
 {
-	
 	if (!Owner || !Status)
 	{
 		return;
 	}
-	float FinalHearingRange = Status->GetBaseHearingRange() * VolumeMultiplier;
-	float Distance = FVector::Dist(Owner->GetActorLocation(), SoundLocation);
+	float dist = FVector::Dist(Owner->GetActorLocation(), SoundLocation);
+	if (dist > MaxRange)
+	{
+		return;
+	}
+	float RealLoundness = Loudness * FMath::Clamp((1 - dist/MaxRange), 0.0f, 1.0f);
 	
-	if (Distance <= FinalHearingRange)
+	if (Status->GetHearingThreshold() <= RealLoundness - AmbientLevel)
 	{
 		bHeardSound = true;
 		LastHeardLocation = SoundLocation;
-		
-		UE_LOG(LogTemp, Warning, TEXT("[%s] Heard Sound at %s (Volume: %.1f)"), 
-			*Owner->GetName(), *SoundLocation.ToString(), VolumeMultiplier);
 	}
+	
 }
+
 
 
 AActor* UMonsterSensingComponent::FindNearestPlayer()
@@ -199,4 +200,14 @@ bool UMonsterSensingComponent::IsPlayersGrouping(float Radius, int32 MinCount)
 bool UMonsterSensingComponent::IsTargetInLight(AActor* Target)
 {
 	return false;
+}
+
+float UMonsterSensingComponent::GetAmbientLevel() const
+{
+	return AmbientLevel;
+}
+
+void UMonsterSensingComponent::SetAmbientLevel(float Level)
+{
+	AmbientLevel = Level;
 }

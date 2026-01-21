@@ -1,6 +1,6 @@
 ﻿#include "AI/Components/MonsterStatusComponent.h"
 #include "AI/Data/MonsterDataAsset.h"
-#include "AI/Entities/BaseMonster.h"
+
 
 UMonsterStatusComponent::UMonsterStatusComponent()
 {
@@ -63,10 +63,7 @@ float UMonsterStatusComponent::GetViewAngle() const
 	return MonsterData->ViewAngle;
 }
 
-float UMonsterStatusComponent::GetBaseHearingRange() const
-{
-	return MonsterData->BaseHearingRange;
-}
+
 
 float UMonsterStatusComponent::GetAttackRange() const
 {
@@ -126,4 +123,9 @@ void UMonsterStatusComponent::SetIsWaiting(bool b)
 float UMonsterStatusComponent::GetStunTime() const
 {
 	return MonsterData->StunnedTime;
+}
+
+float UMonsterStatusComponent::GetHearingThreshold() const
+{
+	return MonsterData->HearingThreshold;
 }

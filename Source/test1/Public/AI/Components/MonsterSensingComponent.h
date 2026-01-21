@@ -29,7 +29,7 @@ public:
 	bool CanSeeTarget(AActor* Target);
 	
 	//hearing 청각 기반 탐색
-	void ReportSound(FVector SoundLocation, float VolumeMultiplier);
+	void ReportSound(FVector SoundLocation, float Loudness, float MaxRange, AActor* Instigator);
 	bool WasSoundHeard() const {return bHeardSound;}
 	FVector GetLastSoundLocation() const{ return LastHeardLocation; }
 	void ResetSoundFlag(){ bHeardSound = false;};
@@ -54,9 +54,13 @@ public:
 	//event
 	bool bTriggered = false;
 	
-private:
+	float GetAmbientLevel() const;
+	void SetAmbientLevel(float Level);
+	
 	UPROPERTY()
 	ABaseMonster* Owner;
+	
+	float AmbientLevel = 0.0f;
 	
 	
 	

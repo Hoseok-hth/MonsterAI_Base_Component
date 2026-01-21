@@ -35,7 +35,6 @@ public:
 	float GetArrivalRadius() const;
 	float GetBaseDetectionRange() const;
 	float GetViewAngle() const;
-	float GetBaseHearingRange() const;
 	float GetAttackRange() const;
 	float GetChaseRange() const;
 	float GetMenaceTime() const;
@@ -49,6 +48,8 @@ public:
 	bool GetIsWaiting() const;
 	void SetIsWaiting(bool b);
 	float GetStunTime() const;
+	float GetHearingThreshold() const;
+	
 	
 	
 private:

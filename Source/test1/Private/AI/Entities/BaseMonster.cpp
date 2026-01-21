@@ -46,7 +46,6 @@ void ABaseMonster::Tick(float DeltaSeconds)
 
 		float View_Range = MonsterData->BaseDetectionRange;
 		float View_Angle = MonsterData->ViewAngle;
-		float Hearing_Range = MonsterData->BaseHearingRange;
 
 		FVector Forward = GetActorForwardVector();
 		FVector Right = GetActorRightVector();
@@ -68,18 +67,6 @@ void ABaseMonster::Tick(float DeltaSeconds)
 			false 
 		);
 		
-		DrawDebugCircle(
-			GetWorld(), 
-			FMatrix(Up, Right, Forward, Center), 
-			Hearing_Range, 
-			32, 
-			FColor::Red, 
-			true, 
-			-1.f, 
-			0, 
-			2.0f, 
-			false 
-		);
 
 		// 시야각(부채꼴) 선 그리기 (이 부분은 기존과 동일)
 		FVector LeftDir = Forward.RotateAngleAxis(-View_Angle * 0.5f, FVector::UpVector);
@@ -235,7 +222,6 @@ void ABaseMonster::OnConstruction(const FTransform& Transform)
 
 		float View_Range = MonsterData->BaseDetectionRange;
 		float View_Angle = MonsterData->ViewAngle;
-		float Hearing_Range = MonsterData->BaseHearingRange;
 
 		FVector Forward = GetActorForwardVector();
 		FVector Right = GetActorRightVector();
@@ -250,19 +236,6 @@ void ABaseMonster::OnConstruction(const FTransform& Transform)
 			View_Range, 
 			32, 
 			FColor::Green, 
-			true, 
-			-1.f, 
-			0, 
-			2.0f, 
-			false 
-		);
-		
-		DrawDebugCircle(
-			GetWorld(), 
-			FMatrix(Up, Right, Forward, Center), 
-			Hearing_Range, 
-			32, 
-			FColor::Red, 
 			true, 
 			-1.f, 
 			0, 
