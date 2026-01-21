@@ -118,6 +118,7 @@ void UMonsterSensingComponent::ReportSound(FVector SoundLocation, float Loudness
 	{
 		bHeardSound = true;
 		LastHeardLocation = SoundLocation;
+		UE_LOG(LogTemp,Warning,TEXT("Monster Heard Noise!"));
 	}
 	
 }
