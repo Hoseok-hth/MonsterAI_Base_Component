@@ -23,6 +23,7 @@ public:
 	//monster idle type & patrol location
 	//몬스터가 idle일때 행동 분류 & patrol Actor array 반환함수
 	EIdleBehavior GetIdleBehavior() const { return IdleBehavior; }
+	void SetIdleBehavior(EIdleBehavior IB);
 	const TArray<AMonsterPatrolPoint*>& GetPatrolTargets() const { return PatrolPoints; }
 	
 	bool GetIsExecutionActive() const { return bIsExecutionActive; }

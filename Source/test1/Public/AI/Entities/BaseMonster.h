@@ -25,17 +25,19 @@ public:
 	UMonsterFSMComponent* GetFSMComp()const{ return FSMComponent; };
 	UAudioComponent* GetAudioLoopComponent() const { return AudioLoopComponent; }
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Event")
+	UFUNCTION(BlueprintImplementableEvent, Category = "Special")
 	void OnSpecialAbilityStart(); 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Condition")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Special")
 	void FinishSpecialAbility();
 	virtual void FinishSpecialAbility_Implementation();
 	
-	UFUNCTION(BlueprintNativeEvent,BlueprintCallable, Category = "Event")
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable, Category = "Patrol")
 	bool OnPatrolWaitStart(); 
 	virtual bool OnPatrolWaitStart_Implementation();
 	
 	void OnLightHit() const;
+	UFUNCTION(BlueprintCallable, Category = "Patrol")
+	void SetIdleBehavior(EIdleBehavior IB);
 	
 	UFUNCTION(BlueprintCallable, Category = "State", meta=(DisplayName="Set Monster State"))
 	void SetState(EMonsterState NewState);

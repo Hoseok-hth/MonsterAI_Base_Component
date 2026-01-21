@@ -107,6 +107,14 @@ void ABaseMonster::OnLightHit() const
 	}
 }
 
+void ABaseMonster::SetIdleBehavior(EIdleBehavior IB)
+{
+	if (StatusComponent)
+	{
+		StatusComponent->SetIdleBehavior(IB);
+	}
+}
+
 void ABaseMonster::SetState(EMonsterState NewState)
 {
 	if (FSMComponent)

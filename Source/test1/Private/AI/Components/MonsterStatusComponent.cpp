@@ -23,6 +23,11 @@ void UMonsterStatusComponent::InitData(const UMonsterDataAsset* BaseData)
 	}
 }
 
+void UMonsterStatusComponent::SetIdleBehavior(EIdleBehavior IB)
+{
+	IdleBehavior = IB;
+}
+
 float UMonsterStatusComponent::GetBaseSpeed() const
 {
 	return BaseSpeed;
